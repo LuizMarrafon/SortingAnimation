@@ -23,6 +23,14 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.0</version>
                 <configuration>
+                    <release>21</release>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
                     <release>11</release>
                 </configuration>
             </plugin>
@@ -34,7 +42,7 @@
                     <execution>
                         <id>default-cli</id>
                         <configuration>
-                            <mainClass>org.example.App</mainClass>
+                            <mainClass>org.example.Principal</mainClass>
                         </configuration>
                     </execution>
                     <execution>
@@ -43,7 +51,7 @@
                             <options>
                                 <option>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address}</option>
                             </options>
-                            <mainClass>org.example.App</mainClass>
+                            <mainClass>org.example.Principal</mainClass>
                         </configuration>
                     </execution>
                 </executions>
