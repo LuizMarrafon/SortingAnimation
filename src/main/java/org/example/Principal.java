@@ -109,7 +109,7 @@ public class Principal extends Application {
             Task<Void> t = new Task<>() {
                 @Override
                 protected Void call() throws Exception {
-                    heap_sort();
+                    bucket_sort();
                     return null;
                 }
             };
@@ -344,6 +344,128 @@ public class Principal extends Application {
         Thread.sleep(80);
         Platform.runLater(() -> lblComp.setText("Comparacao: fim"));
         destacarLinha(-1);
+    }
+
+    private int valorBotao(Button b) {
+        return Integer.parseInt(b.getText());
+    }
+
+    // essa parte anima o botao indo para uma posicao de balde.
+    private Thread moverBotaoPara(Button botao, double alvoX, double alvoY) {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                while (true) {
+                    final double[] dx = {alvoX - botao.getLayoutX()};
+                    final double[] dy = {alvoY - botao.getLayoutY()};
+                    if (Math.abs(dx[0]) <= 1 && Math.abs(dy[0]) <= 1) {
+                        Platform.runLater(() -> {
+                            botao.setLayoutX(alvoX);
+                            botao.setLayoutY(alvoY);
+                        });
+                        break;
+                    }
+                    double passoX = 0;
+                    double passoY = 0;
+                    if (Math.abs(dx[0]) > 0) passoX = Math.signum(dx[0]) * Math.min(5, Math.abs(dx[0]));
+                    if (Math.abs(dy[0]) > 0) passoY = Math.signum(dy[0]) * Math.min(5, Math.abs(dy[0]));
+                    final double fx = passoX;
+                    final double fy = passoY;
+                    Platform.runLater(() -> {
+                        botao.setLayoutX(botao.getLayoutX() + fx);
+                        botao.setLayoutY(botao.getLayoutY() + fy);
+                    });
+                    try {
+                        Thread.sleep(20);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                return null;
+            }
+        };
+        Thread thread = new Thread(task);
+        thread.start();
+        return thread;
+    }
+
+    private Thread animarParaBalde(Button botao, int indiceBalde, int posNoBalde) {
+        double baseX = 90 + (indiceBalde * 130);
+        double baseY = 320;
+        double alvoX = baseX;
+        double alvoY = baseY + (posNoBalde * 32);
+        return moverBotaoPara(botao, alvoX, alvoY);
+    }
+
+    private Thread animarDoBaldeParaLinha(Button botao, int indiceFinal) {
+        double alvoX = 80 + (indiceFinal * 80);
+        double alvoY = 220;
+        return moverBotaoPara(botao, alvoX, alvoY);
+    }
+
+    public void bucket_sort() throws InterruptedException {
+        int qtdbaldes = 5;
+        int n = vet.length;
+        int menor, maior, intervalo, pos, k;
+
+        Button[][] baldes = new Button[qtdbaldes][n];
+        int[] tlBaldes = new int[qtdbaldes];
+
+        // acha o maior e o menor elemento do vetor
+        menor = maior = valorBotao(vet[0]);
+        for (int i = 0; i < n; i++) {
+            int valor = valorBotao(vet[i]);
+            if (valor < menor)
+                menor = valor;
+            if (valor > maior)
+                maior = valor;
+        }
+
+        // com o maior e o menor numero, da para fazer o calculo do range
+        intervalo = (maior - menor + 1) / qtdbaldes;
+        if (intervalo == 0)
+            intervalo = 1;
+
+        // coloca os elementos do vetor nos respectivos baldes (com animacao)
+        for (int i = 0; i < n; i++) {
+            int valor = valorBotao(vet[i]);
+            pos = (valor - menor) / intervalo;
+            if (pos >= qtdbaldes)
+                pos = qtdbaldes - 1;
+
+            Thread t = animarParaBalde(vet[i], pos, tlBaldes[pos]);
+            t.join();
+
+            baldes[pos][tlBaldes[pos]] = vet[i];
+            tlBaldes[pos]++;
+        }
+
+        // ordena cada balde (insercao direta)
+        for (int b = 0; b < qtdbaldes; b++) {
+            for (int i = 1; i < tlBaldes[b]; i++) {
+                Button aux = baldes[b][i];
+                int j = i - 1;
+                while (j >= 0 && valorBotao(baldes[b][j]) > valorBotao(aux)) {
+                    baldes[b][j + 1] = baldes[b][j];
+                    j--;
+                }
+                baldes[b][j + 1] = aux;
+            }
+        }
+
+        // junta tudo de volta no vetor original (com animacao)
+        Button[] novoVet = new Button[n];
+        k = 0;
+        for (int b = 0; b < qtdbaldes; b++) {
+            for (int j = 0; j < tlBaldes[b]; j++) {
+                Button atual = baldes[b][j];
+                Thread t = animarDoBaldeParaLinha(atual, k);
+                t.join();
+                novoVet[k] = atual;
+                k++;
+            }
+        }
+        vet = novoVet;
     }
 
     public Thread move_botoes(int botao0, int botao1) {
