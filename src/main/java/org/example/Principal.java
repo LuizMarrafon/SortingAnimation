@@ -21,6 +21,7 @@ public class Principal extends Application {
     private Button[] vet;
     private Label[] linhasCodigo;
     private Button btnCompA, btnCompB;
+    private Label lblCompSinal;
     private Label lblComp;
 
     private static final String ESTILO_NORMAL = "-fx-font-family: Consolas; -fx-font-size: 13px;";
@@ -30,6 +31,12 @@ public class Principal extends Application {
     private static final String BTN_FILHO = "-fx-font-size: 14px; -fx-background-color: #A64208;";
     private static final String BTN_MAIOR = "-fx-font-size: 14px; -fx-background-color: #0E5673;";
     private static final String BTN_ORDENADO = "-fx-font-size: 14px; -fx-background-color: #66bb6a; -fx-text-fill: white;";
+    private static final String COMP_BTN_BASE = "-fx-background-color: #0E5673; -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;";
+    private static final String COMP_BTN_TRUE = "-fx-background-color: #16a34a; -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;";
+    private static final String COMP_BTN_FALSE = "-fx-background-color: #dc2626; -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;";
+    private static final String COMP_LABEL_BASE = "-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #0f172a;";
+    private static final String COMP_LABEL_TRUE = "-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #14532d; -fx-background-color: #dcfce7; -fx-padding: 4 8 4 8; -fx-background-radius: 8;";
+    private static final String COMP_LABEL_FALSE = "-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #7f1d1d; -fx-background-color: #fee2e2; -fx-padding: 4 8 4 8; -fx-background-radius: 8;";
 
     public static void main(String[] args) {
         launch(args);
@@ -39,33 +46,66 @@ public class Principal extends Application {
     public void start(Stage stage) {
         stage.setTitle("Pesquisa e Ordenacao");
         pane = new AnchorPane();
+        pane.setStyle("-fx-background-color: #e9eef5;");
+
+        // essa parte mexe na divisao visual da tela (esquerda execucao, direita codigo)
+        AnchorPane areaExecucao = new AnchorPane();
+        areaExecucao.setLayoutX(20);
+        areaExecucao.setLayoutY(20);
+        areaExecucao.setPrefSize(770, 660);
+        areaExecucao.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 12; -fx-background-radius: 12;");
+        pane.getChildren().add(areaExecucao);
+
+        AnchorPane areaCodigo = new AnchorPane();
+        areaCodigo.setLayoutX(810);
+        areaCodigo.setLayoutY(20);
+        areaCodigo.setPrefSize(470, 660);
+        areaCodigo.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 12; -fx-background-radius: 12;");
+        pane.getChildren().add(areaCodigo);
+
+        // essa parte mexe no titulo da area de execucao
+        Label titulo = new Label("Heap Sort - Visualizacao");
+        titulo.setLayoutX(20);
+        titulo.setLayoutY(18);
+        titulo.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+        areaExecucao.getChildren().add(titulo);
 
         // botoes de comparacao, so visual
         btnCompA = new Button("-");
-        btnCompA.setLayoutX(300);
-        btnCompA.setLayoutY(350);
+        btnCompA.setLayoutX(260);
+        btnCompA.setLayoutY(420);
         btnCompA.setMinSize(50, 35);
-        btnCompA.setStyle("-fx-background-color: #0E5673; -fx-text-fill: black; -fx-font-size: 16px; -fx-font-weight: bold;");
-        pane.getChildren().add(btnCompA);
+        btnCompA.setStyle(COMP_BTN_BASE);
+        areaExecucao.getChildren().add(btnCompA);
 
         btnCompB = new Button("-");
-        btnCompB.setLayoutX(370);
-        btnCompB.setLayoutY(350);
+        btnCompB.setLayoutX(350);
+        btnCompB.setLayoutY(420);
         btnCompB.setMinSize(50, 35);
-        btnCompB.setStyle("-fx-background-color: #0E5673; -fx-text-fill: black; -fx-font-size: 16px; -fx-font-weight: bold;");
-        pane.getChildren().add(btnCompB);
+        btnCompB.setStyle(COMP_BTN_BASE);
+        areaExecucao.getChildren().add(btnCompB);
+
+        lblCompSinal = new Label("?");
+        lblCompSinal.setLayoutX(325);
+        lblCompSinal.setLayoutY(424);
+        lblCompSinal.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+        areaExecucao.getChildren().add(lblCompSinal);
 
         lblComp = new Label("Comparacao: -");
         lblComp.setLayoutX(430);
-        lblComp.setLayoutY(355);
-        lblComp.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-        pane.getChildren().add(lblComp);
+        lblComp.setLayoutY(428);
+        lblComp.setStyle(COMP_LABEL_BASE);
+        areaExecucao.getChildren().add(lblComp);
 
         botao_inicio = new Button();
-        botao_inicio.setLayoutX(10);
-        botao_inicio.setLayoutY(100);
+        botao_inicio.setLayoutX(20);
+        botao_inicio.setLayoutY(90);
         botao_inicio.setText("Inicia...");
+        //tirar o contorno do click no botão
+        botao_inicio.setFocusTraversable(false);
+        botao_inicio.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: #0f172a; -fx-text-fill: white;");
         botao_inicio.setOnAction(e -> {
+            botao_inicio.setVisible(false);
             Task<Void> t = new Task<>() {
                 @Override
                 protected Void call() throws Exception {
@@ -75,19 +115,21 @@ public class Principal extends Application {
             };
             new Thread(t).start();
         });
-        pane.getChildren().add(botao_inicio);
+        areaExecucao.getChildren().add(botao_inicio);
 
         Random random = new Random();
         vet = new Button[8];
         for (int i = 0; i < vet.length; i++) {
             int numero = random.nextInt(100);
             vet[i] = new Button(String.valueOf(numero));
-            vet[i].setLayoutX(100 + (i * 80));
-            vet[i].setLayoutY(200);
+            vet[i].setLayoutX(80 + (i * 80));
+            vet[i].setLayoutY(220);
             vet[i].setMinHeight(40);
             vet[i].setMinWidth(40);
+            //tirar o contorno do click no botão
+            vet[i].setFocusTraversable(false);
             vet[i].setFont(new Font(14));
-            pane.getChildren().add(vet[i]);
+            areaExecucao.getChildren().add(vet[i]);
         }
 
         criarPainelCodigo();
@@ -109,7 +151,7 @@ public class Principal extends Application {
                 "            if(f2 < tl && vet[f2] > vet[f1]){",
                 "                Fmaior = f2;",
                 "            }",
-                "            if(vet[pai] < vet[Fmaior]){",
+                "            if(vet[Fmaior] > vet[pai]){",
                 "                int aux = vet[pai];",
                 "                vet[pai] = vet[Fmaior];",
                 "                vet[Fmaior] = aux;",
@@ -124,9 +166,10 @@ public class Principal extends Application {
         };
 
         VBox painelCodigo = new VBox(2);
-        painelCodigo.setLayoutX(820);
+        // essa parte mexe no card de codigo da area da direita
+        painelCodigo.setLayoutX(835);
         painelCodigo.setLayoutY(40);
-        painelCodigo.setStyle("-fx-background-color:#f4f4f4; -fx-padding:10; -fx-border-color:#ccc;");
+        painelCodigo.setStyle("-fx-background-color:#ffffff; -fx-padding:12; -fx-border-color:#cbd5e1; -fx-background-radius: 10; -fx-border-radius: 10;");
 
         linhasCodigo = new Label[codigo.length];
         for (int i = 0; i < codigo.length; i++) {
@@ -140,21 +183,23 @@ public class Principal extends Application {
     }
 
     private void criarLegendaCores() {
-        VBox legenda = new VBox(6);
-        legenda.setLayoutX(1071);
-        legenda.setLayoutY(477);
-        legenda.setStyle("-fx-background-color:#f4f4f4; -fx-padding:10; -fx-border-color:#ccc;");
+        // essa parte mexe na legenda: agora em linha horizontal
+        VBox legenda = new VBox(8);
+        legenda.setLayoutX(835);
+        legenda.setLayoutY(560);
+        legenda.setStyle("-fx-background-color:#ffffff; -fx-padding:10; -fx-border-color:#cbd5e1; -fx-background-radius: 10; -fx-border-radius: 10;");
 
         Label titulo = new Label("Legenda de cores");
         titulo.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
 
-        legenda.getChildren().addAll(
-                titulo,
+        HBox linhaLegenda = new HBox(18,
                 itemLegenda("#0A1626", "Pai"),
                 itemLegenda("#A64208", "Filho (f1/f2)"),
                 itemLegenda("#0E5673", "Maior filho"),
                 itemLegenda("#66bb6a", "Ordenado")
         );
+        linhaLegenda.setAlignment(Pos.CENTER_LEFT);
+        legenda.getChildren().addAll(titulo, linhaLegenda);
 
         pane.getChildren().add(legenda);
     }
@@ -174,7 +219,7 @@ public class Principal extends Application {
 
     private void destacarLinhaComPausa(int linha1Based) throws InterruptedException {
         destacarLinha(linha1Based);
-        Thread.sleep(260);
+        Thread.sleep(700);
     }
 
     private void destacarLinha(int linha1Based) {
@@ -207,11 +252,26 @@ public class Principal extends Application {
         Platform.runLater(() -> {
             btnCompA.setText(vet[a].getText());
             btnCompB.setText(vet[b].getText());
+            lblCompSinal.setText(op);
+            // essa parte deixa os botoes da comparacao com a mesma cor dos botoes do vetor.
+            btnCompA.setStyle(vet[a].getStyle());
+            btnCompB.setStyle(vet[b].getStyle());
             if (resultado) {
-                lblComp.setText(vet[a].getText() + " " + op + " " + vet[b].getText() + " ? SIM");
+                lblComp.setText("Resultado: SIM");
+                lblComp.setStyle(COMP_LABEL_TRUE);
             } else {
-                lblComp.setText(vet[a].getText() + " " + op + " " + vet[b].getText() + " ? NAO");
+                lblComp.setText("Resultado: NAO");
+                lblComp.setStyle(COMP_LABEL_FALSE);
             }
+        });
+    }
+
+    private void limparComparacaoVisual() {
+        Platform.runLater(() -> {
+            btnCompA.setStyle(COMP_BTN_BASE);
+            btnCompB.setStyle(COMP_BTN_BASE);
+            lblCompSinal.setText("?");
+            lblComp.setStyle(COMP_LABEL_BASE);
         });
     }
 
@@ -243,22 +303,24 @@ public class Principal extends Application {
                 if (f2 < tl) {
                     boolean r1 = Integer.parseInt(vet[f2].getText()) > Integer.parseInt(vet[f1].getText());
                     mostrarComparacao(f2, f1, ">", r1);
-                    Thread.sleep(300);
+                    Thread.sleep(1700);
+                    limparComparacaoVisual();if (f2 < tl && Integer.parseInt(vet[f2].getText()) > Integer.parseInt(vet[f1].getText())) {
+                        destacarLinhaComPausa(9);
+                        Fmaior = f2;
+                    }
                 }
 
                 //aqui volta o heap normal
-                if (f2 < tl && Integer.parseInt(vet[f2].getText()) > Integer.parseInt(vet[f1].getText())) {
-                    destacarLinhaComPausa(9);
-                    Fmaior = f2;
-                }
+
 
                 destacarBotao(Fmaior, BTN_MAIOR);
                 destacarLinhaComPausa(11);
 
                 // essa parte e so de comparacao e visual, nao tem nada com o codigo.
                 boolean r2 = Integer.parseInt(vet[pai].getText()) < Integer.parseInt(vet[Fmaior].getText());
-                mostrarComparacao(pai, Fmaior, "<", r2);
-                Thread.sleep(300);
+                mostrarComparacao(Fmaior,pai, ">", r2);
+                Thread.sleep(1700);
+                limparComparacaoVisual();
 
                 // aqui volta o heap normal
                 if (Integer.parseInt(vet[pai].getText()) < Integer.parseInt(vet[Fmaior].getText())) {
@@ -278,6 +340,8 @@ public class Principal extends Application {
             destacarLinhaComPausa(20);
             tl--;
         }
+        Platform.runLater(() -> vet[0].setStyle(BTN_ORDENADO));
+        Thread.sleep(80);
         Platform.runLater(() -> lblComp.setText("Comparacao: fim"));
         destacarLinha(-1);
     }
