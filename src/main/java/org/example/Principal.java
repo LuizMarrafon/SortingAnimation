@@ -7,16 +7,24 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class Principal extends Application {
+    // Painel "raiz" da cena, como uma mesa onde todos os componentes sao apoiados.
     AnchorPane pane;
+    // Lado esquerdo da tela: onde acontece a animacao dos algoritmos.
+    AnchorPane areaExecucao;
     Button botao_inicio;
     private Button[] vet;
     private Label[] linhasCodigo;
@@ -25,6 +33,13 @@ public class Principal extends Application {
     private Label lblComp;
     private Label lblBucketMinMax;
     private Label lblTituloAlgoritmo;
+    private Button btnStatus1;
+    private Button btnStatus2;
+    private Button btnStatus3;
+    private Button btnStatus4;
+    private final List<ImageView> bucketImagens = new ArrayList<>();
+    private Image imagemBalde;
+    private int quantidadeBucketsAtual = 1;
     private String algoritmoSelecionado = "HEAP";
     private VBox painelCodigo;
     private VBox legendaCores;
@@ -46,6 +61,7 @@ public class Principal extends Application {
     private static final String COMP_LABEL_BASE = "-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #0f172a;";
     private static final String COMP_LABEL_TRUE = "-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #14532d; -fx-background-color: #dcfce7; -fx-padding: 4 8 4 8; -fx-background-radius: 8;";
     private static final String COMP_LABEL_FALSE = "-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #7f1d1d; -fx-background-color: #fee2e2; -fx-padding: 4 8 4 8; -fx-background-radius: 8;";
+    private static final String STATUS_BTN_STYLE = "-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: #0f766e; -fx-text-fill: white;";
 
     public static void main(String[] args) {
         launch(args);
@@ -53,17 +69,25 @@ public class Principal extends Application {
 
     @Override
     public void start(Stage stage) {
+        // Configuracao inicial da janela do projeto.
         stage.setTitle("Pesquisa e Ordenacao");
         pane = new AnchorPane();
         pane.setStyle("-fx-background-color: #e9eef5;");
 
-        // essa parte mexe na divisao visual da tela (esquerda execucao, direita codigo)
-        AnchorPane areaExecucao = new AnchorPane();
+        // Divide a interface em duas metades:
+        // esquerda para ver a execucao, direita para acompanhar o codigo.
+        areaExecucao = new AnchorPane();
         areaExecucao.setLayoutX(20);
         areaExecucao.setLayoutY(20);
         areaExecucao.setPrefSize(900, 800);
         areaExecucao.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 12; -fx-background-radius: 12;");
         pane.getChildren().add(areaExecucao);
+
+        // Carrega a imagem de balde (se existir) para usar no modo Bucket.
+        File arquivoBalde = new File("balde/balde.png");
+        if (arquivoBalde.exists()) {
+            imagemBalde = new Image(arquivoBalde.toURI().toString());
+        }
 
         AnchorPane areaCodigo = new AnchorPane();
         areaCodigo.setLayoutX(940);
@@ -72,14 +96,14 @@ public class Principal extends Application {
         areaCodigo.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 12; -fx-background-radius: 12;");
         pane.getChildren().add(areaCodigo);
 
-        // essa parte mexe no titulo da area de execucao
+        // Titulo da visualizacao atual.
         lblTituloAlgoritmo = new Label("Heap Sort - Visualizacao");
         lblTituloAlgoritmo.setLayoutX(20);
         lblTituloAlgoritmo.setLayoutY(18);
         lblTituloAlgoritmo.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
         areaExecucao.getChildren().add(lblTituloAlgoritmo);
 
-        // menu de escolha do algoritmo
+        // Menu simples para alternar entre Heap e Bucket.
         btnMenuHeap = new Button("Heap Sort");
         btnMenuHeap.setLayoutX(20);
         btnMenuHeap.setLayoutY(70);
@@ -112,39 +136,71 @@ public class Principal extends Application {
             btnMenuHeap.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-background-color: #e2e8f0; -fx-text-fill: #0f172a;");
         });
 
-        // botoes de comparacao, so visual
+        // Bloco de comparacao visual (serve como "zoom" do passo atual).
         btnCompA = new Button("-");
         btnCompA.setLayoutX(260);
-        btnCompA.setLayoutY(500);
+        btnCompA.setLayoutY(610);
         btnCompA.setMinSize(50, 35);
         btnCompA.setStyle(COMP_BTN_BASE);
         areaExecucao.getChildren().add(btnCompA);
 
         btnCompB = new Button("-");
         btnCompB.setLayoutX(350);
-        btnCompB.setLayoutY(500);
+        btnCompB.setLayoutY(610);
         btnCompB.setMinSize(50, 35);
         btnCompB.setStyle(COMP_BTN_BASE);
         areaExecucao.getChildren().add(btnCompB);
 
         lblCompSinal = new Label("?");
         lblCompSinal.setLayoutX(325);
-        lblCompSinal.setLayoutY(504);
+        lblCompSinal.setLayoutY(614);
         lblCompSinal.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
         areaExecucao.getChildren().add(lblCompSinal);
 
         lblComp = new Label("Comparacao: -");
         lblComp.setLayoutX(430);
-        lblComp.setLayoutY(508);
+        lblComp.setLayoutY(618);
         lblComp.setStyle(COMP_LABEL_BASE);
         areaExecucao.getChildren().add(lblComp);
 
-        // texto do bucket: mostra menor e maior durante o primeiro for
+        // Placar do bucket durante a varredura inicial de menor/maior.
         lblBucketMinMax = new Label("Bucket -> Menor: - | Maior: -");
         lblBucketMinMax.setLayoutX(260);
-        lblBucketMinMax.setLayoutY(555);
+        lblBucketMinMax.setLayoutY(670);
         lblBucketMinMax.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
         areaExecucao.getChildren().add(lblBucketMinMax);
+
+        btnStatus1 = new Button("-");
+        btnStatus1.setLayoutX(260);
+        btnStatus1.setLayoutY(120);
+        btnStatus1.setMinWidth(95);
+        btnStatus1.setFocusTraversable(false);
+        btnStatus1.setStyle(STATUS_BTN_STYLE);
+        areaExecucao.getChildren().add(btnStatus1);
+
+        btnStatus2 = new Button("-");
+        btnStatus2.setLayoutX(365);
+        btnStatus2.setLayoutY(120);
+        btnStatus2.setMinWidth(95);
+        btnStatus2.setFocusTraversable(false);
+        btnStatus2.setStyle(STATUS_BTN_STYLE);
+        areaExecucao.getChildren().add(btnStatus2);
+
+        btnStatus3 = new Button("-");
+        btnStatus3.setLayoutX(470);
+        btnStatus3.setLayoutY(120);
+        btnStatus3.setMinWidth(125);
+        btnStatus3.setFocusTraversable(false);
+        btnStatus3.setStyle(STATUS_BTN_STYLE);
+        areaExecucao.getChildren().add(btnStatus3);
+
+        btnStatus4 = new Button("-");
+        btnStatus4.setLayoutX(605);
+        btnStatus4.setLayoutY(120);
+        btnStatus4.setMinWidth(125);
+        btnStatus4.setFocusTraversable(false);
+        btnStatus4.setStyle(STATUS_BTN_STYLE);
+        areaExecucao.getChildren().add(btnStatus4);
 
         botao_inicio = new Button();
         botao_inicio.setLayoutX(20);
@@ -174,7 +230,7 @@ public class Principal extends Application {
         });
         areaExecucao.getChildren().add(botao_inicio);
 
-        // botao para voltar ao inicio e escolher outro metodo
+        // Reset geral: gera novos valores e libera novamente a escolha do metodo.
         botao_reset = new Button("Resetar");
         botao_reset.setLayoutX(100);
         botao_reset.setLayoutY(110);
@@ -184,6 +240,7 @@ public class Principal extends Application {
         botao_reset.setOnAction(e -> resetarTela());
         areaExecucao.getChildren().add(botao_reset);
 
+        // Gera o vetor inicial com 9 valores aleatorios.
         Random random = new Random();
         vet = new Button[9];
         for (int i = 0; i < vet.length; i++) {
@@ -208,6 +265,7 @@ public class Principal extends Application {
     }
 
     private void resetarTela() {
+        // Volta o app para um estado "limpo", como no comeco da aula/demo.
         Random random = new Random();
         for (int i = 0; i < vet.length; i++) {
             int numero = random.nextInt(100);
@@ -222,6 +280,7 @@ public class Principal extends Application {
         lblComp.setText("Comparacao: -");
         lblComp.setStyle(COMP_LABEL_BASE);
         lblBucketMinMax.setText("Bucket -> Menor: - | Maior: -");
+        configurarIndicadoresMetodo();
         destacarLinha(-1);
         atualizarVisibilidadeMetodo();
 
@@ -232,6 +291,7 @@ public class Principal extends Application {
     }
 
     private void atualizarVisibilidadeMetodo() {
+        // Liga/desliga partes da tela conforme o algoritmo ativo.
         boolean ehHeap = "HEAP".equals(algoritmoSelecionado);
 
         btnCompA.setVisible(ehHeap);
@@ -241,9 +301,13 @@ public class Principal extends Application {
         legendaCores.setVisible(ehHeap);
 
         lblBucketMinMax.setVisible(!ehHeap);
+        btnStatus4.setVisible(true);
+        setBucketImagensVisiveis(!ehHeap);
+        configurarIndicadoresMetodo();
     }
 
     private void criarPainelCodigo() {
+        // Painel da direita: funciona como "roteiro" do algoritmo em execucao.
         painelCodigo = new VBox(2);
         // essa parte mexe no card de codigo da area da direita
         painelCodigo.setLayoutX(960);
@@ -254,33 +318,34 @@ public class Principal extends Application {
         criarLegendaCores();
     }
 
-    // essa parte troca o codigo exibido no painel conforme o algoritmo escolhido.
+    // Troca o pseudocodigo da lateral para combinar com o algoritmo selecionado.
     private void atualizarPainelCodigo(String algoritmo) {
         String[] codigo;
         if ("BUCKET".equals(algoritmo)) {
             codigo = new String[]{
                     "public void bucketSort(){",
+                    "    int quantidadeBuckets = (int)Math.sqrt(filesize());",
+                    "    if(quantidadeBuckets == 0) quantidadeBuckets = 1;",
                     "    int menor, maior, intervalo, pos, k;",
-                    "    int qtdbaldes = 5;",
-                    "    int[][] baldes = new int[qtdbaldes][TL];",
-                    "    int[] TLbaldes = new int[qtdbaldes];",
+                    "    int[][] baldes = new int[quantidadeBuckets][TL];",
+                    "    int[] TLbaldes = new int[quantidadeBuckets];",
                     "    menor = maior = vetor[0];",
                     "    for(int i = 0; i < TL; i++){",
                     "        if(vetor[i] < menor) menor = vetor[i];",
                     "        if(vetor[i] > maior) maior = vetor[i];",
                     "    }",
-                    "    intervalo = (maior - menor + 1) / qtdbaldes;",
-                    "    for(int i = 0; i < qtdbaldes; i++) TLbaldes[i] = 0;",
+                    "    intervalo = (maior - menor + 1) / quantidadeBuckets;",
+                    "    for(int i = 0; i < quantidadeBuckets; i++) TLbaldes[i] = 0;",
                     "    for(int i = 0; i < TL; i++){",
                     "        if(intervalo == 0){",
                     "            baldes[0][TLbaldes[0]++] = vetor[i];",
                     "        }else{",
                     "            pos = (vetor[i] - menor) / intervalo;",
-                    "            if(pos >= qtdbaldes) pos = qtdbaldes - 1;",
+                    "            if(pos >= quantidadeBuckets) pos = quantidadeBuckets - 1;",
                     "            baldes[pos][TLbaldes[pos]++] = vetor[i];",
                     "        }",
                     "    }",
-                    "    for(int i = 0; i < qtdbaldes; i++){",
+                    "    for(int i = 0; i < quantidadeBuckets; i++){",
                     "        for(int j = 1; j < TLbaldes[i]; j++){",
                     "            int aux = baldes[i][j];",
                     "            int p = j;",
@@ -292,7 +357,7 @@ public class Principal extends Application {
                     "        }",
                     "    }",
                     "    k = 0;",
-                    "    for(int i = 0; i < qtdbaldes; i++){",
+                    "    for(int i = 0; i < quantidadeBuckets; i++){",
                     "        for(int j = 0; j < TLbaldes[i]; j++)",
                     "            vetor[k++] = baldes[i][j];",
                     "    }",
@@ -336,7 +401,7 @@ public class Principal extends Application {
     }
 
     private void criarLegendaCores() {
-        // essa parte mexe na legenda: agora em linha horizontal
+        // Legenda de apoio para o Heap: cada cor representa um papel no passo atual.
         legendaCores = new VBox(8);
         legendaCores.setLayoutX(538);
         legendaCores.setLayoutY(725);
@@ -358,6 +423,7 @@ public class Principal extends Application {
     }
 
     private HBox itemLegenda(String corHex, String texto) {
+        // Monta uma linhazinha da legenda: quadrado + descricao textual.
         Label cor = new Label("   ");
         cor.setMinSize(18, 18);
         cor.setStyle("-fx-background-color: " + corHex + "; -fx-border-color: #666;");
@@ -371,11 +437,13 @@ public class Principal extends Application {
     }
 
     private void destacarLinhaComPausa(int linha1Based) throws InterruptedException {
+        // Helper para nao repetir codigo: destaca e espera um pouco para leitura humana.
         destacarLinha(linha1Based);
         Thread.sleep(700);
     }
 
     private void destacarLinha(int linha1Based) {
+        // Marca a linha "em execucao" para sincronizar explicacao e animacao.
         Platform.runLater(() -> {
             for (Label l : linhasCodigo) {
                 l.setStyle(ESTILO_NORMAL);
@@ -388,6 +456,7 @@ public class Principal extends Application {
     }
 
     private void pintarBase(int tl) {
+        // No Heap: tudo que passa do TL atual ja esta ordenado e fica verde.
         for (int i = 0; i < vet.length; i++) {
             if (i >= tl) {
                 vet[i].setStyle(BTN_ORDENADO);
@@ -398,15 +467,17 @@ public class Principal extends Application {
     }
 
     public void destacarBotao(int botao, String estilo) {
+        // Atalho visual para pintar um elemento especifico do vetor.
         Platform.runLater(() -> vet[botao].setStyle(estilo));
     }
 
     public void mostrarComparacao(int a, int b, String op, boolean resultado) {
+        // Mostra uma comparacao entre dois indices do vetor principal.
         Platform.runLater(() -> {
             btnCompA.setText(vet[a].getText());
             btnCompB.setText(vet[b].getText());
             lblCompSinal.setText(op);
-            // essa parte deixa os botoes da comparacao com a mesma cor dos botoes do vetor.
+            // Copia o estilo dos elementos reais para a comparacao ficar intuitiva.
             btnCompA.setStyle(vet[a].getStyle());
             btnCompB.setStyle(vet[b].getStyle());
             if (resultado) {
@@ -420,6 +491,7 @@ public class Principal extends Application {
     }
 
     private void mostrarComparacaoBotoes(Button a, Button b, String op, boolean resultado) {
+        // Mesma ideia da comparacao acima, mas recebendo botoes ja resolvidos.
         Platform.runLater(() -> {
             btnCompA.setText(a.getText());
             btnCompB.setText(b.getText());
@@ -437,6 +509,7 @@ public class Principal extends Application {
     }
 
     private void limparComparacaoVisual() {
+        // Limpa o painel de comparacao para preparar o proximo passo.
         Platform.runLater(() -> {
             btnCompA.setStyle(COMP_BTN_BASE);
             btnCompB.setStyle(COMP_BTN_BASE);
@@ -446,34 +519,141 @@ public class Principal extends Application {
     }
 
     private void mostrarBucketMinMax(int menor, int maior) {
+        // Atualiza o placar de faixa do bucket (menor e maior vistos ate agora).
         Platform.runLater(() -> lblBucketMinMax.setText("Bucket -> Menor: " + menor + " | Maior: " + maior));
     }
 
+    private void desenharBucketsVisuais(int quantidadeBuckets) {
+        // Cria um "icone de balde" por coluna, como gavetas de classificacao.
+        quantidadeBucketsAtual = Math.max(1, quantidadeBuckets);
+        Platform.runLater(() -> {
+            for (ImageView view : bucketImagens) {
+                areaExecucao.getChildren().remove(view);
+            }
+            bucketImagens.clear();
+
+            if (imagemBalde == null) {
+                return;
+            }
+
+            for (int b = 0; b < quantidadeBuckets; b++) {
+                ImageView view = new ImageView(imagemBalde);
+                view.setFitWidth(52);
+                view.setFitHeight(52);
+                view.setPreserveRatio(true);
+                view.setLayoutX(calcularPosicaoXBucket(b) - 26);
+                view.setLayoutY(525);
+                bucketImagens.add(view);
+            }
+
+            areaExecucao.getChildren().addAll(bucketImagens);
+        });
+    }
+
+    private double calcularPosicaoXBucket(int indiceBalde) {
+        // Distribui os baldes pela largura util para evitar espaco ocioso.
+        double largura = areaExecucao.getPrefWidth();
+        double margemEsquerda = 110;
+        double margemDireita = largura - 140;
+        if (quantidadeBucketsAtual <= 1) {
+            return (margemEsquerda + margemDireita) / 2.0;
+        }
+        double passo = (margemDireita - margemEsquerda) / (quantidadeBucketsAtual - 1.0);
+        return margemEsquerda + (indiceBalde * passo);
+    }
+
+    private void setBucketImagensVisiveis(boolean visivel) {
+        // Baldes so aparecem quando o metodo atual e o Bucket.
+        Platform.runLater(() -> {
+            for (ImageView view : bucketImagens) {
+                view.setVisible(visivel);
+            }
+        });
+    }
+
+    private void configurarIndicadoresMetodo() {
+        // Ajusta os indicadores de topo para refletir o algoritmo atual.
+        if ("HEAP".equals(algoritmoSelecionado)) {
+            atualizarIndicadoresHeap(-1, -1, -1, "-");
+        } else {
+            atualizarIndicadoresBucket(-1, -1, calcularQuantidadeBuckets(), "-");
+        }
+    }
+
+    private void atualizarIndicadoresHeap(int pai, int filho1, int filho2, String auxValor) {
+        // Atualiza os "indicadores de depuracao" de cima no modo Heap.
+        Platform.runLater(() -> {
+            btnStatus1.setText("pai: " + (pai >= 0 ? pai : "-"));
+            btnStatus2.setText("filho1: " + (filho1 >= 0 ? filho1 : "-"));
+            btnStatus3.setText("filho2: " + (filho2 >= 0 ? filho2 : "-"));
+            btnStatus4.setText("aux: " + auxValor);
+        });
+    }
+
+    private void atualizarIndicadoresBucket(int i, int j, int qtdBaldes) {
+        // Sobrecarga para chamadas sem valor de aux explicito.
+        atualizarIndicadoresBucket(i, j, qtdBaldes, "-");
+    }
+
+    private void atualizarIndicadoresBucket(int i, int j, int qtdBaldes, String auxValor) {
+        // Atualiza os indicadores de cima no modo Bucket.
+        Platform.runLater(() -> {
+            btnStatus1.setText("i: " + (i >= 0 ? i : "-"));
+            btnStatus2.setText("j: " + (j >= 0 ? j : "-"));
+            btnStatus3.setText("qtd: " + qtdBaldes);
+            btnStatus4.setText("aux: " + auxValor);
+        });
+    }
+
+    private int filesize() {
+        // Nesta visualizacao, filesize equivale ao tamanho do vetor atual.
+        return vet.length;
+    }
+
+    private int calcularQuantidadeBuckets() {
+        // Regra do trabalho: usar raiz do tamanho para estimar qtd de baldes.
+        int quantidadeBuckets = (int) Math.sqrt(filesize());
+        if (quantidadeBuckets == 0) {
+            quantidadeBuckets = 1;
+        }
+        return quantidadeBuckets;
+    }
+
     public void heap_sort() throws InterruptedException {
+        // Heap Sort aqui funciona em "ciclos":
+        // 1) monta (ou remonta) um heap maximo na parte ainda nao ordenada
+        // 2) coloca o maior elemento da vez no final do vetor
+        // 3) diminui o TL e repete ate sobrar 1 elemento
         int pai, f1, f2, Fmaior, tl = vet.length;
+        atualizarIndicadoresHeap(-1, -1, -1, "-");
         destacarLinhaComPausa(3);
         while (tl > 1) {
+            // enquanto tiver pelo menos 2 elementos "ativos", ainda da para ordenar.
             destacarLinhaComPausa(4);
 
             for (pai = tl / 2 - 1; pai >= 0; pai--) {
+                // percorre os pais de tras para frente para garantir propriedade de heap.
                 destacarBotao(pai, BTN_PAI);
                 destacarLinhaComPausa(5);
                 f1 = 2 * pai + 1;
+                atualizarIndicadoresHeap(pai, f1, -1, "-");
                 if (f1 < tl) {
                     destacarBotao(f1, BTN_FILHO);
                 }
 
                 destacarLinhaComPausa(6);
                 f2 = f1 + 1;
+                atualizarIndicadoresHeap(pai, f1, f2 < tl ? f2 : -1, "-");
                 if (f2 < tl) {
                     destacarBotao(f2, BTN_FILHO);
                 }
 
                 destacarLinhaComPausa(7);
+                // por padrao assume o filho da esquerda como maior.
                 Fmaior = f1;
 
                 destacarLinhaComPausa(8);
-                // essa parte e so de comparacao e visual, nao tem nada com o codigo.
+                // Comparacao visual entre os filhos para decidir qual e o maior.
                 if (f2 < tl) {
                     boolean r1 = Integer.parseInt(vet[f2].getText()) > Integer.parseInt(vet[f1].getText());
                     mostrarComparacao(f2, f1, ">", r1);
@@ -484,30 +664,34 @@ public class Principal extends Application {
                     }
                 }
 
-                //aqui volta o heap normal
-
-
+                // Depois de decidir quem e o maior filho, pinta ele para ficar didatico.
                 destacarBotao(Fmaior, BTN_MAIOR);
                 destacarLinhaComPausa(11);
 
-                // essa parte e so de comparacao e visual, nao tem nada com o codigo.
+                // Compara pai vs maior filho para decidir se precisa trocar.
                 boolean r2 = Integer.parseInt(vet[pai].getText()) < Integer.parseInt(vet[Fmaior].getText());
                 mostrarComparacao(Fmaior,pai, ">", r2);
                 Thread.sleep(1700);
                 limparComparacaoVisual();
 
-                // aqui volta o heap normal
+                // Se pai for menor, faz a troca para manter a regra do heap maximo.
                 if (Integer.parseInt(vet[pai].getText()) < Integer.parseInt(vet[Fmaior].getText())) {
                     destacarLinhaComPausa(12);
+                    atualizarIndicadoresHeap(pai, f1, f2 < tl ? f2 : -1, vet[pai].getText());
                     Thread t = move_botoes(pai, Fmaior);
                     t.join();
+                    atualizarIndicadoresHeap(pai, f1, f2 < tl ? f2 : -1, "-");
                 }
                 pintarBase(tl);
             }
 
+            // Com heap pronto, a raiz (indice 0) guarda o maior da parte ativa.
+            // Entao troca raiz com ultima posicao valida (tl-1) e "congela" esse fim.
             destacarLinhaComPausa(17);
+            atualizarIndicadoresHeap(0, -1, -1, vet[0].getText());
             Thread t = move_botoes(0, tl - 1);
             t.join();
+            atualizarIndicadoresHeap(0, -1, -1, "-");
             int pos = tl - 1;
             Platform.runLater(() -> vet[pos].setStyle(BTN_ORDENADO));
             Thread.sleep(80);
@@ -517,14 +701,16 @@ public class Principal extends Application {
         Platform.runLater(() -> vet[0].setStyle(BTN_ORDENADO));
         Thread.sleep(80);
         Platform.runLater(() -> lblComp.setText("Comparacao: fim"));
+        atualizarIndicadoresHeap(-1, -1, -1, "-");
         destacarLinha(-1);
     }
 
     private int valorBotao(Button b) {
+        // Como o numero esta no texto do botao, converte para inteiro aqui.
         return Integer.parseInt(b.getText());
     }
 
-    // essa parte anima o botao indo para uma posicao de balde.
+    // Motor de animacao: move um botao em pequenos passos ate o alvo.
     private Thread moverBotaoPara(Button botao, double alvoX, double alvoY) {
         Task<Void> task = new Task<>() {
             @Override
@@ -565,25 +751,28 @@ public class Principal extends Application {
     }
 
     private Thread animarParaBalde(Button botao, int balde, int pos) {
-        double x = 40 + balde * 175; // mais espaco entre os baldes
-        double y = 320 + pos * 35;    // itens do balde em coluna
+        // Leva o elemento para dentro do balde escolhido.
+        double x = calcularPosicaoXBucket(balde) - 20;
+        double y = 320 + pos * 35;
         return moverBotaoPara(botao, x, y);
     }
 
     private Thread animarDoBaldeParaLinha(Button botao, int indiceFinal) {
+        // Traz de volta para o vetor principal, na ordem final.
         double x = 110 + indiceFinal * 80; // volta pra linha principal
         double y = 260;
         return moverBotaoPara(botao, x, y);
     }
 
-    // anima o elemento auxiliar da insercao em uma trilha lateral do balde
+    // Trilha lateral do auxiliar na insercao (facilita enxergar o "aux").
     private Thread animarAuxiliarBalde(Button botao, int balde, int pos) {
-        double x = 40 + balde * 175 - 55;
+        double x = calcularPosicaoXBucket(balde) - 70;
         double y = 320 + pos * 35;
         return moverBotaoPara(botao, x, y);
     }
 
     private void pintarComparacaoBucket(Button a, Button b) {
+        // Destaca em vermelho os dois que estao sendo comparados no balde.
         Platform.runLater(() -> {
             a.setStyle(BTN_INSERCAO);
             b.setStyle(BTN_INSERCAO);
@@ -591,6 +780,7 @@ public class Principal extends Application {
     }
 
     private void limparComparacaoBucket(Button a, Button b) {
+        // Volta os botoes comparados para o estilo padrao.
         Platform.runLater(() -> {
             a.setStyle(BTN_NORMAL);
             b.setStyle(BTN_NORMAL);
@@ -598,23 +788,35 @@ public class Principal extends Application {
     }
 
     public void bucket_sort() throws InterruptedException {
+        // Bucket em alto nivel:
+        // 1) encontra menor/maior
+        // 2) distribui por faixa
+        // 3) ordena cada balde por insercao
+        // 4) concatena tudo de volta.
         destacarLinhaComPausa(1);
-        int qtdbaldes = 5;
+        // Quantidade de baldes escolhida por raiz do tamanho.
+        int quantidadeBuckets = (int) Math.sqrt(filesize());
+        if (quantidadeBuckets == 0)
+            quantidadeBuckets = 1;
+        desenharBucketsVisuais(quantidadeBuckets);
+        atualizarIndicadoresBucket(-1, -1, quantidadeBuckets);
         int n = vet.length;
         int menor, maior, intervalo, pos, k;
 
         destacarLinhaComPausa(4);
-        Button[][] baldes = new Button[qtdbaldes][n];
+        Button[][] baldes = new Button[quantidadeBuckets][n];
         destacarLinhaComPausa(5);
-        int[] tlBaldes = new int[qtdbaldes];
+        // tlBaldes guarda "quantos elementos ja entraram" em cada balde.
+        int[] tlBaldes = new int[quantidadeBuckets];
 
-        // acha o maior e o menor elemento do vetor
+        // Etapa de mapeamento da faixa de valores.
         destacarLinhaComPausa(6);
         menor = maior = valorBotao(vet[0]);
         mostrarBucketMinMax(menor, maior);
         Thread.sleep(700);
         destacarLinhaComPausa(7);
         for (int i = 0; i < n; i++) {
+            atualizarIndicadoresBucket(i, -1, quantidadeBuckets);
             int valor = valorBotao(vet[i]);
             vet[i].setStyle(BTN_PAI);
             destacarLinhaComPausa(8);
@@ -628,21 +830,24 @@ public class Principal extends Application {
             vet[i].setStyle(BTN_NORMAL);
         }
 
-        // com o maior e o menor numero, da para fazer o calculo do range
+        // Intervalo define o tamanho de cada faixa numerica.
+        // Exemplo: se intervalo = 10, valores [0..9] caem num balde, [10..19] em outro...
         destacarLinhaComPausa(11);
-        intervalo = (maior - menor + 1) / qtdbaldes;
+        intervalo = (maior - menor + 1) / quantidadeBuckets;
         if (intervalo == 0)
             intervalo = 1;
 
-        // coloca os elementos do vetor nos respectivos baldes (com animacao)
+        // Distribuicao: transforma o valor em indice de balde e anima a "queda".
         destacarLinhaComPausa(13);
         for (int i = 0; i < n; i++) {
+            atualizarIndicadoresBucket(i, -1, quantidadeBuckets);
             int valor = valorBotao(vet[i]);
             destacarLinhaComPausa(14);
             pos = (valor - menor) / intervalo;
             destacarLinhaComPausa(18);
-            if (pos >= qtdbaldes)
-                pos = qtdbaldes - 1;
+            // Protecao para nao estourar o ultimo balde por arredondamento.
+            if (pos >= quantidadeBuckets)
+                pos = quantidadeBuckets - 1;
 
             Thread t = animarParaBalde(vet[i], pos, tlBaldes[pos]);
             t.join();
@@ -651,7 +856,8 @@ public class Principal extends Application {
             tlBaldes[pos]++;
         }
 
-        // ordena cada balde (insercao direta)
+        // Cada balde e pequeno, entao insercao direta funciona muito bem aqui.
+        // A ideia e "arrumar a gaveta por dentro" antes de juntar tudo.
         destacarLinhaComPausa(22);
         Platform.runLater(() -> {
             btnCompA.setVisible(true);
@@ -659,19 +865,23 @@ public class Principal extends Application {
             lblCompSinal.setVisible(true);
             lblComp.setVisible(true);
         });
-        for (int b = 0; b < qtdbaldes; b++) {
+        for (int b = 0; b < quantidadeBuckets; b++) {
             destacarLinhaComPausa(23);
             for (int i = 1; i < tlBaldes[b]; i++) {
                 destacarLinhaComPausa(24);
                 Button aux = baldes[b][i];
+                atualizarIndicadoresBucket(i, -1, quantidadeBuckets, aux.getText());
                 int posAuxVisual = i;
                 Thread tAuxLado = animarAuxiliarBalde(aux, b, posAuxVisual);
                 tAuxLado.join();
                 destacarLinhaComPausa(25);
                 int j = i - 1;
+                atualizarIndicadoresBucket(i, j, quantidadeBuckets, aux.getText());
                 destacarLinhaComPausa(26);
                 boolean continuaComparando = true;
                 while (j >= 0 && continuaComparando) {
+                    // Enquanto aux for menor que o da esquerda, empurra o da esquerda para frente.
+                    atualizarIndicadoresBucket(i, j, quantidadeBuckets, aux.getText());
                     Button comparado = baldes[b][j];
                     pintarComparacaoBucket(comparado, aux);
                     Thread.sleep(700);
@@ -681,11 +891,13 @@ public class Principal extends Application {
                     Thread.sleep(750);
                     destacarLinhaComPausa(27);
                     if (precisaTrocar) {
+                        // "abre espaco": desloca comparado uma posicao a direita.
                         baldes[b][j + 1] = comparado;
                         destacarLinhaComPausa(28);
                         Thread tShift = animarParaBalde(comparado, b, j + 1);
                         tShift.join();
                         j--;
+                        atualizarIndicadoresBucket(i, j, quantidadeBuckets, aux.getText());
                         posAuxVisual--;
                         Thread tAuxSobe = animarAuxiliarBalde(aux, b, posAuxVisual);
                         tAuxSobe.join();
@@ -697,7 +909,9 @@ public class Principal extends Application {
                     limparComparacaoVisual();
                 }
                 destacarLinhaComPausa(30);
+                // Quando parar, j+1 e exatamente a casa correta do aux.
                 baldes[b][j + 1] = aux;
+                atualizarIndicadoresBucket(i, j + 1, quantidadeBuckets, aux.getText());
                 Thread tAux = animarParaBalde(aux, b, j + 1);
                 tAux.join();
                 Thread.sleep(800);
@@ -705,15 +919,17 @@ public class Principal extends Application {
         }
         atualizarVisibilidadeMetodo();
 
-        // junta tudo de volta no vetor original (com animacao)
+        // Junta os baldes na sequencia para montar o vetor ordenado final.
         destacarLinhaComPausa(33);
         Button[] novoVet = new Button[n];
         destacarLinhaComPausa(34);
         k = 0;
         destacarLinhaComPausa(35);
-        for (int b = 0; b < qtdbaldes; b++) {
+        for (int b = 0; b < quantidadeBuckets; b++) {
+            // Concatena na ordem dos baldes: do menor intervalo para o maior.
             destacarLinhaComPausa(36);
             for (int j = 0; j < tlBaldes[b]; j++) {
+                atualizarIndicadoresBucket(-1, j, quantidadeBuckets);
                 Button atual = baldes[b][j];
                 Thread t = animarDoBaldeParaLinha(atual, k);
                 t.join();
@@ -724,13 +940,16 @@ public class Principal extends Application {
             }
         }
         vet = novoVet;
+        atualizarIndicadoresBucket(-1, -1, quantidadeBuckets);
         destacarLinha(-1);
     }
 
     public Thread move_botoes(int botao0, int botao1) {
+        // Animacao de troca no Heap: separa, cruza e recoloca.
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
+                // 1) afasta verticalmente para visualizar que vai ter troca.
                 for (int i = 0; i < 10; i++) {
                     Platform.runLater(() -> vet[botao0].setLayoutY(vet[botao0].getLayoutY() + 5));
                     Platform.runLater(() -> vet[botao1].setLayoutY(vet[botao1].getLayoutY() - 5));
@@ -743,6 +962,7 @@ public class Principal extends Application {
                 double distancia = Math.abs(vet[botao1].getLayoutX() - vet[botao0].getLayoutX());
                 int passos = (int) (distancia / 5);
 
+                // 2) atravessa na horizontal.
                 for (int i = 0; i < passos; i++) {
                     Platform.runLater(() -> vet[botao0].setLayoutX(vet[botao0].getLayoutX() + 5));
                     Platform.runLater(() -> vet[botao1].setLayoutX(vet[botao1].getLayoutX() - 5));
@@ -752,6 +972,7 @@ public class Principal extends Application {
                         e.printStackTrace();
                     }
                 }
+                // 3) volta para a linha do vetor.
                 for (int i = 0; i < 10; i++) {
                     Platform.runLater(() -> vet[botao0].setLayoutY(vet[botao0].getLayoutY() - 5));
                     Platform.runLater(() -> vet[botao1].setLayoutY(vet[botao1].getLayoutY() + 5));
@@ -761,6 +982,7 @@ public class Principal extends Application {
                         e.printStackTrace();
                     }
                 }
+                // Troca de fato no array de botoes (estado logico).
                 Button aux = vet[botao0];
                 vet[botao0] = vet[botao1];
                 vet[botao1] = aux;
