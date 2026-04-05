@@ -7,118 +7,131 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
 import javafx.stage.Stage;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class Principal extends Application {
-    // Painel "raiz" da cena, como uma mesa onde todos os componentes sao apoiados.
+public class Principal extends Application
+{
     AnchorPane pane;
-    // Lado esquerdo da tela: onde acontece a animacao dos algoritmos.
     AnchorPane areaExecucao;
     Button botao_inicio;
     private Button[] vet;
+    private Label[] indicesVet;
     private Label[] linhasCodigo;
     private Button btnCompA, btnCompB;
     private Label lblCompSinal;
     private Label lblComp;
-    private Label lblBucketMinMax;
     private Label lblTituloAlgoritmo;
     private Button btnStatus1;
     private Button btnStatus2;
     private Button btnStatus3;
     private Button btnStatus4;
+    private Button btnStatusTL;
+    private Button btnStatusMenor;
+    private Button btnStatusMaior;
+    private Button btnStatusP;
+    private Button btnStatusPos;
+    private int ultimoMenorBucket = -1;
+    private int ultimoMaiorBucket = -1;
     private final List<ImageView> bucketImagens = new ArrayList<>();
     private Image imagemBalde;
     private int quantidadeBucketsAtual = 1;
     private String algoritmoSelecionado = "HEAP";
     private VBox painelCodigo;
+    private ScrollPane scrollPainelCodigo;
     private VBox legendaCores;
     private Button btnMenuHeap;
     private Button btnMenuBucket;
     private Button botao_reset;
+    private Button botao_parar;
+    private Thread threadExecucaoAtual;
+    private volatile boolean execucaoCancelada = false;
 
     private static final String ESTILO_NORMAL = "-fx-font-family: Consolas; -fx-font-size: 13px;";
     private static final String ESTILO_ATUAL = "-fx-font-family: Consolas; -fx-font-size: 13px; -fx-background-color: #ffe082; -fx-font-weight: bold;";
-    private static final String BTN_NORMAL = "-fx-font-size: 14px;";
-    private static final String BTN_PAI = "-fx-font-size: 14px; -fx-background-color: #0A1626; -fx-text-fill: white;";
-    private static final String BTN_FILHO = "-fx-font-size: 14px; -fx-background-color: #A64208;";
-    private static final String BTN_MAIOR = "-fx-font-size: 14px; -fx-background-color: #0E5673;";
-    private static final String BTN_INSERCAO = "-fx-font-size: 14px; -fx-background-color: #dc2626; -fx-text-fill: white;";
-    private static final String BTN_ORDENADO = "-fx-font-size: 14px; -fx-background-color: #66bb6a; -fx-text-fill: white;";
+    private static final String BTN_NUM_BASE = "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-insets: 0; -fx-background-radius: 6; -fx-border-radius: 6; -fx-border-color: transparent; -fx-padding: 0;";
+    private static final String BTN_NORMAL = BTN_NUM_BASE + "-fx-background-color: #475569;";
+    private static final String BTN_PAI = BTN_NUM_BASE + "-fx-background-color: #0A1626;";
+    private static final String BTN_FILHO = BTN_NUM_BASE + "-fx-background-color: #A64208;";
+    private static final String BTN_MAIOR = BTN_NUM_BASE + "-fx-background-color: #0E5673;";
+    private static final String BTN_INSERCAO = BTN_NUM_BASE + "-fx-background-color: #dc2626;";
+    private static final String BTN_ORDENADO = BTN_NUM_BASE + "-fx-background-color: #66bb6a;";
     private static final String COMP_BTN_BASE = "-fx-background-color: #0E5673; -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;";
-    private static final String COMP_BTN_TRUE = "-fx-background-color: #16a34a; -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;";
-    private static final String COMP_BTN_FALSE = "-fx-background-color: #dc2626; -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;";
     private static final String COMP_LABEL_BASE = "-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #0f172a;";
     private static final String COMP_LABEL_TRUE = "-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #14532d; -fx-background-color: #dcfce7; -fx-padding: 4 8 4 8; -fx-background-radius: 8;";
     private static final String COMP_LABEL_FALSE = "-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #7f1d1d; -fx-background-color: #fee2e2; -fx-padding: 4 8 4 8; -fx-background-radius: 8;";
     private static final String STATUS_BTN_STYLE = "-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: #0f766e; -fx-text-fill: white;";
 
-    public static void main(String[] args) {
+    public static void main(String[] args)
+    {
         launch(args);
     }
 
     @Override
-    public void start(Stage stage) {
-        // Configuracao inicial da janela do projeto.
+    public void start(Stage stage)
+    {
         stage.setTitle("Pesquisa e Ordenacao");
+        stage.setMaximized(true);
         pane = new AnchorPane();
         pane.setStyle("-fx-background-color: #e9eef5;");
 
-        // Divide a interface em duas metades:
-        // esquerda para ver a execucao, direita para acompanhar o codigo.
+        // divide a interface em duas metades
+
+        // esquerda para ver a execucao
         areaExecucao = new AnchorPane();
         areaExecucao.setLayoutX(20);
         areaExecucao.setLayoutY(20);
-        areaExecucao.setPrefSize(900, 800);
+        areaExecucao.setPrefSize(900, 700);
         areaExecucao.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 12; -fx-background-radius: 12;");
         pane.getChildren().add(areaExecucao);
 
-        // Carrega a imagem de balde (se existir) para usar no modo Bucket.
+        // carrega a imagemzinha do balde
         File arquivoBalde = new File("balde/balde.png");
-        if (arquivoBalde.exists()) {
+        if (arquivoBalde.exists())
             imagemBalde = new Image(arquivoBalde.toURI().toString());
-        }
 
+        // direita para acompanhar o codigo
         AnchorPane areaCodigo = new AnchorPane();
         areaCodigo.setLayoutX(940);
         areaCodigo.setLayoutY(20);
-        areaCodigo.setPrefSize(490, 800);
+        areaCodigo.setPrefSize(490, 700);
         areaCodigo.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-border-radius: 12; -fx-background-radius: 12;");
         pane.getChildren().add(areaCodigo);
 
-        // Titulo da visualizacao atual.
+        // titulo da visualizacao atual
         lblTituloAlgoritmo = new Label("Heap Sort - Visualizacao");
         lblTituloAlgoritmo.setLayoutX(20);
-        lblTituloAlgoritmo.setLayoutY(18);
-        lblTituloAlgoritmo.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+        lblTituloAlgoritmo.setLayoutY(10);
+        lblTituloAlgoritmo.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
         areaExecucao.getChildren().add(lblTituloAlgoritmo);
 
-        // Menu simples para alternar entre Heap e Bucket.
+        // menuzinho para heap e bucket
         btnMenuHeap = new Button("Heap Sort");
         btnMenuHeap.setLayoutX(20);
-        btnMenuHeap.setLayoutY(70);
+        btnMenuHeap.setLayoutY(50);
         btnMenuHeap.setFocusTraversable(false);
         btnMenuHeap.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-background-color: #0f172a; -fx-text-fill: white;");
         areaExecucao.getChildren().add(btnMenuHeap);
 
         btnMenuBucket = new Button("Bucket Sort");
         btnMenuBucket.setLayoutX(120);
-        btnMenuBucket.setLayoutY(70);
+        btnMenuBucket.setLayoutY(50);
         btnMenuBucket.setFocusTraversable(false);
         btnMenuBucket.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-background-color: #e2e8f0; -fx-text-fill: #0f172a;");
         areaExecucao.getChildren().add(btnMenuBucket);
 
-        btnMenuHeap.setOnAction(e -> {
+        // caso o botao do heap seja apertado
+        btnMenuHeap.setOnAction(e ->
+        {
             algoritmoSelecionado = "HEAP";
             lblTituloAlgoritmo.setText("Heap Sort - Visualizacao");
             atualizarPainelCodigo("HEAP");
@@ -127,7 +140,9 @@ public class Principal extends Application {
             btnMenuBucket.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-background-color: #e2e8f0; -fx-text-fill: #0f172a;");
         });
 
-        btnMenuBucket.setOnAction(e -> {
+        // caso o botao do bucket seja apertado
+        btnMenuBucket.setOnAction(e ->
+        {
             algoritmoSelecionado = "BUCKET";
             lblTituloAlgoritmo.setText("Bucket Sort - Visualizacao");
             atualizarPainelCodigo("BUCKET");
@@ -136,43 +151,48 @@ public class Principal extends Application {
             btnMenuHeap.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-background-color: #e2e8f0; -fx-text-fill: #0f172a;");
         });
 
-        // Bloco de comparacao visual (serve como "zoom" do passo atual).
+        // area para simular as comparacoes
         btnCompA = new Button("-");
-        btnCompA.setLayoutX(260);
-        btnCompA.setLayoutY(610);
+        btnCompA.setLayoutX(245);
+        btnCompA.setLayoutY(480);
         btnCompA.setMinSize(50, 35);
+        btnCompA.setPrefSize(50, 35);
+        btnCompA.setMaxSize(50, 35);
+        btnCompA.setMouseTransparent(true);
+        btnCompA.setFocusTraversable(false);
         btnCompA.setStyle(COMP_BTN_BASE);
         areaExecucao.getChildren().add(btnCompA);
 
         btnCompB = new Button("-");
-        btnCompB.setLayoutX(350);
-        btnCompB.setLayoutY(610);
+        btnCompB.setLayoutX(335);
+        btnCompB.setLayoutY(480);
         btnCompB.setMinSize(50, 35);
+        btnCompB.setPrefSize(50, 35);
+        btnCompB.setMaxSize(50, 35);
+        btnCompB.setMouseTransparent(true);
+        btnCompB.setFocusTraversable(false);
         btnCompB.setStyle(COMP_BTN_BASE);
         areaExecucao.getChildren().add(btnCompB);
 
-        lblCompSinal = new Label("?");
-        lblCompSinal.setLayoutX(325);
-        lblCompSinal.setLayoutY(614);
-        lblCompSinal.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
+        lblCompSinal = new Label(">");
+        lblCompSinal.setLayoutX(305);
+        lblCompSinal.setLayoutY(478);
+        lblCompSinal.setMinSize(20, 40);
+        lblCompSinal.setPrefSize(20, 40);
+        lblCompSinal.setMaxSize(20, 40);
+        lblCompSinal.setAlignment(Pos.CENTER);
+        lblCompSinal.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #0f172a;");
         areaExecucao.getChildren().add(lblCompSinal);
 
-        lblComp = new Label("Comparacao: -");
-        lblComp.setLayoutX(430);
-        lblComp.setLayoutY(618);
+        lblComp = new Label("");
+        lblComp.setLayoutX(395);
+        lblComp.setLayoutY(485);
         lblComp.setStyle(COMP_LABEL_BASE);
         areaExecucao.getChildren().add(lblComp);
 
-        // Placar do bucket durante a varredura inicial de menor/maior.
-        lblBucketMinMax = new Label("Bucket -> Menor: - | Maior: -");
-        lblBucketMinMax.setLayoutX(260);
-        lblBucketMinMax.setLayoutY(670);
-        lblBucketMinMax.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
-        areaExecucao.getChildren().add(lblBucketMinMax);
-
         btnStatus1 = new Button("-");
         btnStatus1.setLayoutX(260);
-        btnStatus1.setLayoutY(120);
+        btnStatus1.setLayoutY(90);
         btnStatus1.setMinWidth(95);
         btnStatus1.setFocusTraversable(false);
         btnStatus1.setStyle(STATUS_BTN_STYLE);
@@ -180,7 +200,7 @@ public class Principal extends Application {
 
         btnStatus2 = new Button("-");
         btnStatus2.setLayoutX(365);
-        btnStatus2.setLayoutY(120);
+        btnStatus2.setLayoutY(90);
         btnStatus2.setMinWidth(95);
         btnStatus2.setFocusTraversable(false);
         btnStatus2.setStyle(STATUS_BTN_STYLE);
@@ -188,7 +208,7 @@ public class Principal extends Application {
 
         btnStatus3 = new Button("-");
         btnStatus3.setLayoutX(470);
-        btnStatus3.setLayoutY(120);
+        btnStatus3.setLayoutY(90);
         btnStatus3.setMinWidth(125);
         btnStatus3.setFocusTraversable(false);
         btnStatus3.setStyle(STATUS_BTN_STYLE);
@@ -196,64 +216,155 @@ public class Principal extends Application {
 
         btnStatus4 = new Button("-");
         btnStatus4.setLayoutX(605);
-        btnStatus4.setLayoutY(120);
+        btnStatus4.setLayoutY(90);
         btnStatus4.setMinWidth(125);
         btnStatus4.setFocusTraversable(false);
         btnStatus4.setStyle(STATUS_BTN_STYLE);
         areaExecucao.getChildren().add(btnStatus4);
 
+        // area para adiciionar as variaveis apra teste de mesa
+        btnStatusTL = new Button("TL: -");
+        btnStatusTL.setLayoutX(740);
+        btnStatusTL.setLayoutY(90);
+        btnStatusTL.setMinWidth(80);
+        btnStatusTL.setFocusTraversable(false);
+        btnStatusTL.setStyle(STATUS_BTN_STYLE);
+        areaExecucao.getChildren().add(btnStatusTL);
+        
+        btnStatusMenor = new Button("menor: -");
+        btnStatusMenor.setLayoutX(260);
+        btnStatusMenor.setLayoutY(130);
+        btnStatusMenor.setMinWidth(95);
+        btnStatusMenor.setFocusTraversable(false);
+        btnStatusMenor.setStyle(STATUS_BTN_STYLE);
+        btnStatusMenor.setVisible(false);
+        areaExecucao.getChildren().add(btnStatusMenor);
+        
+        btnStatusMaior = new Button("maior: -");
+        btnStatusMaior.setLayoutX(365);
+        btnStatusMaior.setLayoutY(130);
+        btnStatusMaior.setMinWidth(95);
+        btnStatusMaior.setFocusTraversable(false);
+        btnStatusMaior.setStyle(STATUS_BTN_STYLE);
+        btnStatusMaior.setVisible(false);
+        areaExecucao.getChildren().add(btnStatusMaior);
+
+        btnStatusP = new Button("p: -");
+        btnStatusP.setLayoutX(470);
+        btnStatusP.setLayoutY(130);
+        btnStatusP.setMinWidth(95);
+        btnStatusP.setFocusTraversable(false);
+        btnStatusP.setStyle(STATUS_BTN_STYLE);
+        btnStatusP.setVisible(false);
+        areaExecucao.getChildren().add(btnStatusP);
+
+        btnStatusPos = new Button("pos: -");
+        btnStatusPos.setLayoutX(575);
+        btnStatusPos.setLayoutY(130);
+        btnStatusPos.setMinWidth(95);
+        btnStatusPos.setFocusTraversable(false);
+        btnStatusPos.setStyle(STATUS_BTN_STYLE);
+        btnStatusPos.setVisible(false);
+        areaExecucao.getChildren().add(btnStatusPos);
+
+        // iniciar a animacao selecionada
         botao_inicio = new Button();
         botao_inicio.setLayoutX(20);
-        botao_inicio.setLayoutY(110);
-        botao_inicio.setText("Inicia...");
-        //tirar o contorno do click no botão
+        botao_inicio.setLayoutY(90);
+        botao_inicio.setText("Iniciar");
         botao_inicio.setFocusTraversable(false);
         botao_inicio.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: #0f172a; -fx-text-fill: white;");
-        botao_inicio.setOnAction(e -> {
+        botao_inicio.setOnAction(e ->
+        {
+            execucaoCancelada = false;
             botao_inicio.setVisible(false);
             btnMenuHeap.setVisible(false);
             btnMenuBucket.setVisible(false);
-            Task<Void> t = new Task<>() {
+            botao_reset.setVisible(false);
+            botao_parar.setVisible(true);
+            Task<Void> t = new Task<>()
+            {
                 @Override
-                protected Void call() throws Exception {
-                    if (algoritmoSelecionado.equals("HEAP")) {
+                protected Void call() throws Exception
+                {
+                    if (algoritmoSelecionado.equals("HEAP"))
                         heap_sort();
-                    } else {
+                    else
                         bucket_sort();
-                    }
                     return null;
                 }
             };
-            t.setOnSucceeded(ev -> botao_reset.setVisible(true));
-            t.setOnFailed(ev -> botao_reset.setVisible(true));
-            new Thread(t).start();
+            t.setOnSucceeded(ev ->
+            {
+                botao_parar.setVisible(false);
+                if (!execucaoCancelada)
+                    botao_reset.setVisible(true);
+                threadExecucaoAtual = null;
+            });
+            t.setOnFailed(ev ->
+            {
+                botao_parar.setVisible(false);
+                if (!execucaoCancelada)
+                    botao_reset.setVisible(true);
+                threadExecucaoAtual = null;
+            });
+            threadExecucaoAtual = new Thread(t);
+            threadExecucaoAtual.start();
         });
         areaExecucao.getChildren().add(botao_inicio);
 
-        // Reset geral: gera novos valores e libera novamente a escolha do metodo.
+        // para resetar dps q termina a animacao
         botao_reset = new Button("Resetar");
         botao_reset.setLayoutX(100);
-        botao_reset.setLayoutY(110);
+        botao_reset.setLayoutY(90);
         botao_reset.setFocusTraversable(false);
         botao_reset.setVisible(false);
         botao_reset.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: #475569; -fx-text-fill: white;");
         botao_reset.setOnAction(e -> resetarTela());
         areaExecucao.getChildren().add(botao_reset);
 
-        // Gera o vetor inicial com 9 valores aleatorios.
+        // para parar enquanto esta acontecendo alguma animacao
+        botao_parar = new Button("Parar");
+        botao_parar.setLayoutX(190);
+        botao_parar.setLayoutY(90);
+        botao_parar.setFocusTraversable(false);
+        botao_parar.setVisible(false);
+        botao_parar.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: #b91c1c; -fx-text-fill: white;");
+        botao_parar.setOnAction(e ->
+        {
+            execucaoCancelada = true;
+            if (threadExecucaoAtual != null)
+                threadExecucaoAtual.interrupt();
+            resetarTela();
+        });
+        areaExecucao.getChildren().add(botao_parar);
+
+        // 9 valores aleatorios pro vetor
         Random random = new Random();
         vet = new Button[9];
-        for (int i = 0; i < vet.length; i++) {
+        indicesVet = new Label[9];
+        for (int i = 0; i < vet.length; i++)
+        {
             int numero = random.nextInt(100);
             vet[i] = new Button(String.valueOf(numero));
             vet[i].setLayoutX(110 + (i * 80));
-            vet[i].setLayoutY(260);
+            vet[i].setLayoutY(200);
             vet[i].setMinHeight(40);
             vet[i].setMinWidth(40);
-            //tirar o contorno do click no botão
+            vet[i].setPrefHeight(40);
+            vet[i].setPrefWidth(40);
+            vet[i].setMaxHeight(40);
+            vet[i].setMaxWidth(40);
             vet[i].setFocusTraversable(false);
-            vet[i].setFont(new Font(14));
+            vet[i].setMouseTransparent(true);
+            vet[i].setStyle(BTN_NORMAL);
             areaExecucao.getChildren().add(vet[i]);
+
+            indicesVet[i] = new Label(String.valueOf(i));
+            indicesVet[i].setLayoutX(110 + (i * 80) + 15);
+            indicesVet[i].setLayoutY(245);
+            indicesVet[i].setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;");
+            areaExecucao.getChildren().add(indicesVet[i]);
         }
 
         criarPainelCodigo();
@@ -264,22 +375,25 @@ public class Principal extends Application {
         stage.show();
     }
 
-    private void resetarTela() {
-        // Volta o app para um estado "limpo", como no comeco da aula/demo.
+    private void resetarTela()
+    {
+        ultimoMenorBucket = -1;
+        ultimoMaiorBucket = -1;
+        threadExecucaoAtual = null;
         Random random = new Random();
-        for (int i = 0; i < vet.length; i++) {
+        for (int i = 0; i < vet.length; i++)
+        {
             int numero = random.nextInt(100);
             vet[i].setText(String.valueOf(numero));
             vet[i].setLayoutX(110 + (i * 80));
-            vet[i].setLayoutY(260);
+            vet[i].setLayoutY(200);
             vet[i].setStyle(BTN_NORMAL);
         }
         btnCompA.setText("-");
         btnCompB.setText("-");
-        lblCompSinal.setText("?");
-        lblComp.setText("Comparacao: -");
+        lblCompSinal.setText(">");
+        lblComp.setText("");
         lblComp.setStyle(COMP_LABEL_BASE);
-        lblBucketMinMax.setText("Bucket -> Menor: - | Maior: -");
         configurarIndicadoresMetodo();
         destacarLinha(-1);
         atualizarVisibilidadeMetodo();
@@ -288,64 +402,108 @@ public class Principal extends Application {
         btnMenuHeap.setVisible(true);
         btnMenuBucket.setVisible(true);
         botao_reset.setVisible(false);
+        botao_parar.setVisible(false);
     }
 
-    private void atualizarVisibilidadeMetodo() {
-        // Liga/desliga partes da tela conforme o algoritmo ativo.
+    private void atualizarVisibilidadeMetodo()
+    {
         boolean ehHeap = "HEAP".equals(algoritmoSelecionado);
+        posicionarPainelComparacao(ehHeap);
 
         btnCompA.setVisible(ehHeap);
         btnCompB.setVisible(ehHeap);
         lblCompSinal.setVisible(ehHeap);
         lblComp.setVisible(ehHeap);
         legendaCores.setVisible(ehHeap);
+        btnStatusTL.setVisible(ehHeap);
+        btnStatusMenor.setVisible(!ehHeap);
+        btnStatusMaior.setVisible(!ehHeap);
+        btnStatusP.setVisible(!ehHeap);
+        btnStatusPos.setVisible(!ehHeap);
 
-        lblBucketMinMax.setVisible(!ehHeap);
         btnStatus4.setVisible(true);
         setBucketImagensVisiveis(!ehHeap);
         configurarIndicadoresMetodo();
     }
 
-    private void criarPainelCodigo() {
-        // Painel da direita: funciona como "roteiro" do algoritmo em execucao.
+    // preciso passar por parametro pq os 2 metodos colocam essa area de comparacao em lugares diferntes
+    private void posicionarPainelComparacao(boolean ehHeap)
+    {
+        if (ehHeap)
+        {
+            btnCompA.setLayoutX(245);
+            btnCompA.setLayoutY(480);
+            btnCompB.setLayoutX(335);
+            btnCompB.setLayoutY(480);
+            lblCompSinal.setLayoutX(305);
+            lblCompSinal.setLayoutY(478);
+            lblComp.setLayoutX(395);
+            lblComp.setLayoutY(485);
+        }
+        else
+        {
+            btnCompA.setLayoutX(720);
+            btnCompA.setLayoutY(140);
+            btnCompB.setLayoutX(810);
+            btnCompB.setLayoutY(140);
+            lblCompSinal.setLayoutX(780);
+            lblCompSinal.setLayoutY(138);
+            lblComp.setLayoutX(720);
+            lblComp.setLayoutY(180);
+        }
+    }
+
+    private void criarPainelCodigo()
+    {
         painelCodigo = new VBox(2);
-        // essa parte mexe no card de codigo da area da direita
-        painelCodigo.setLayoutX(960);
-        painelCodigo.setLayoutY(35);
-        painelCodigo.setStyle("-fx-background-color:#ffffff; -fx-padding:12; -fx-border-color:#cbd5e1; -fx-background-radius: 10; -fx-border-radius: 10;");
-        pane.getChildren().add(painelCodigo);
+        painelCodigo.setStyle("-fx-background-color:#ffffff; -fx-padding:12;");
+
+        scrollPainelCodigo = new ScrollPane(painelCodigo);
+        scrollPainelCodigo.setLayoutX(960);
+        scrollPainelCodigo.setLayoutY(35);
+        scrollPainelCodigo.setPrefSize(470, 650);
+        scrollPainelCodigo.setFitToWidth(true);
+        scrollPainelCodigo.setStyle("-fx-background-color:#ffffff; -fx-border-color:#cbd5e1; -fx-background-radius: 10; -fx-border-radius: 10;");
+        pane.getChildren().add(scrollPainelCodigo);
         atualizarPainelCodigo("HEAP");
         criarLegendaCores();
     }
 
-    // Troca o pseudocodigo da lateral para combinar com o algoritmo selecionado.
-    private void atualizarPainelCodigo(String algoritmo) {
+    private void atualizarPainelCodigo(String algoritmo)
+    {
         String[] codigo;
-        if ("BUCKET".equals(algoritmo)) {
-            codigo = new String[]{
+        if ("BUCKET".equals(algoritmo))
+        {
+            codigo = new String[]
+                    {
                     "public void bucketSort(){",
-                    "    int quantidadeBuckets = (int)Math.sqrt(filesize());",
-                    "    if(quantidadeBuckets == 0) quantidadeBuckets = 1;",
+                    "    int qntdBuckets = (int)Math.sqrt(filesize());",
+                    "    if(qntdBuckets == 0)",
+                    "        qntdBuckets = 1;",
                     "    int menor, maior, intervalo, pos, k;",
-                    "    int[][] baldes = new int[quantidadeBuckets][TL];",
-                    "    int[] TLbaldes = new int[quantidadeBuckets];",
+                    "    int[][] baldes = new int[qntdBuckets][TL];",
+                    "    int[] TLbaldes = new int[qntdBuckets];",
                     "    menor = maior = vetor[0];",
                     "    for(int i = 0; i < TL; i++){",
-                    "        if(vetor[i] < menor) menor = vetor[i];",
-                    "        if(vetor[i] > maior) maior = vetor[i];",
+                    "        if(vetor[i] < menor)",
+                    "            menor = vetor[i];",
+                    "        if(vetor[i] > maior)",
+                    "            maior = vetor[i];",
                     "    }",
-                    "    intervalo = (maior - menor + 1) / quantidadeBuckets;",
-                    "    for(int i = 0; i < quantidadeBuckets; i++) TLbaldes[i] = 0;",
+                    "    intervalo = (maior - menor + 1) / qntdBuckets;",
+                    "    for(int i = 0; i < qntdBuckets; i++)",
+                    "        TLbaldes[i] = 0;",
                     "    for(int i = 0; i < TL; i++){",
                     "        if(intervalo == 0){",
                     "            baldes[0][TLbaldes[0]++] = vetor[i];",
                     "        }else{",
                     "            pos = (vetor[i] - menor) / intervalo;",
-                    "            if(pos >= quantidadeBuckets) pos = quantidadeBuckets - 1;",
+                    "            if(pos >= qntdBuckets)",
+                    "                pos = qntdBuckets - 1;",
                     "            baldes[pos][TLbaldes[pos]++] = vetor[i];",
                     "        }",
                     "    }",
-                    "    for(int i = 0; i < quantidadeBuckets; i++){",
+                    "    for(int i = 0; i < qntdBuckets; i++){",
                     "        for(int j = 1; j < TLbaldes[i]; j++){",
                     "            int aux = baldes[i][j];",
                     "            int p = j;",
@@ -357,14 +515,17 @@ public class Principal extends Application {
                     "        }",
                     "    }",
                     "    k = 0;",
-                    "    for(int i = 0; i < quantidadeBuckets; i++){",
+                    "    for(int i = 0; i < qntdBuckets; i++){",
                     "        for(int j = 0; j < TLbaldes[i]; j++)",
                     "            vetor[k++] = baldes[i][j];",
                     "    }",
                     "}"
             };
-        } else {
-            codigo = new String[]{
+        }
+        else
+        {
+            codigo = new String[]
+                    {
                     "public void heap_sort(){",
                     "    int pai, f1, f2, Fmaior, tl;",
                     "    while(tl > 1){",
@@ -392,7 +553,8 @@ public class Principal extends Application {
 
         painelCodigo.getChildren().clear();
         linhasCodigo = new Label[codigo.length];
-        for (int i = 0; i < codigo.length; i++) {
+        for (int i = 0; i < codigo.length; i++)
+        {
             Label linha = new Label(String.format("%2d  %s", i + 1, codigo[i]));
             linha.setStyle("-fx-font-family: Consolas; -fx-font-size: 13px;");
             linhasCodigo[i] = linha;
@@ -400,11 +562,11 @@ public class Principal extends Application {
         }
     }
 
-    private void criarLegendaCores() {
-        // Legenda de apoio para o Heap: cada cor representa um papel no passo atual.
+    private void criarLegendaCores()
+    {
         legendaCores = new VBox(8);
-        legendaCores.setLayoutX(538);
-        legendaCores.setLayoutY(725);
+        legendaCores.setLayoutX(200);
+        legendaCores.setLayoutY(540);
         legendaCores.setStyle("-fx-background-color:#ffffff; -fx-padding:10; -fx-border-color:#cbd5e1; -fx-background-radius: 10; -fx-border-radius: 10;");
 
         Label titulo = new Label("Legenda de cores");
@@ -419,11 +581,11 @@ public class Principal extends Application {
         linhaLegenda.setAlignment(Pos.CENTER_LEFT);
         legendaCores.getChildren().addAll(titulo, linhaLegenda);
 
-        pane.getChildren().add(legendaCores);
+        areaExecucao.getChildren().add(legendaCores);
     }
 
-    private HBox itemLegenda(String corHex, String texto) {
-        // Monta uma linhazinha da legenda: quadrado + descricao textual.
+    private HBox itemLegenda(String corHex, String texto)
+    {
         Label cor = new Label("   ");
         cor.setMinSize(18, 18);
         cor.setStyle("-fx-background-color: " + corHex + "; -fx-border-color: #666;");
@@ -436,107 +598,112 @@ public class Principal extends Application {
         return linha;
     }
 
-    private void destacarLinhaComPausa(int linha1Based) throws InterruptedException {
-        // Helper para nao repetir codigo: destaca e espera um pouco para leitura humana.
-        destacarLinha(linha1Based);
+    private void destacarLinhaComPausa(int numLinha) throws InterruptedException
+    {
+        if (execucaoCancelada || Thread.currentThread().isInterrupted())
+            throw new InterruptedException("Execucao cancelada");
+
+        destacarLinha(numLinha);
         Thread.sleep(700);
     }
 
-    private void destacarLinha(int linha1Based) {
-        // Marca a linha "em execucao" para sincronizar explicacao e animacao.
-        Platform.runLater(() -> {
-            for (Label l : linhasCodigo) {
+    private void destacarLinha(int numLinha)
+    {
+        Platform.runLater(() ->
+        {
+            for (Label l : linhasCodigo)
+            {
                 l.setStyle(ESTILO_NORMAL);
             }
-            int idx = linha1Based - 1;
-            if (idx >= 0 && idx < linhasCodigo.length) {
+            int idx = numLinha - 1;
+            if (idx >= 0 && idx < linhasCodigo.length)
                 linhasCodigo[idx].setStyle(ESTILO_ATUAL);
-            }
         });
     }
 
-    private void pintarBase(int tl) {
-        // No Heap: tudo que passa do TL atual ja esta ordenado e fica verde.
-        for (int i = 0; i < vet.length; i++) {
-            if (i >= tl) {
+    private void pintarBase(int tl)
+    {
+        for (int i = 0; i < vet.length; i++)
+        {
+            if (i >= tl)
                 vet[i].setStyle(BTN_ORDENADO);
-            } else {
+            else
                 vet[i].setStyle(BTN_NORMAL);
-            }
         }
     }
 
-    public void destacarBotao(int botao, String estilo) {
-        // Atalho visual para pintar um elemento especifico do vetor.
+    public void destacarBotao(int botao, String estilo)
+    {
         Platform.runLater(() -> vet[botao].setStyle(estilo));
     }
 
-    public void mostrarComparacao(int a, int b, String op, boolean resultado) {
-        // Mostra uma comparacao entre dois indices do vetor principal.
-        Platform.runLater(() -> {
+    public void mostrarComparacao(int a, int b, String op, boolean resultado)
+    {
+        Platform.runLater(() ->
+        {
             btnCompA.setText(vet[a].getText());
             btnCompB.setText(vet[b].getText());
             lblCompSinal.setText(op);
-            // Copia o estilo dos elementos reais para a comparacao ficar intuitiva.
             btnCompA.setStyle(vet[a].getStyle());
             btnCompB.setStyle(vet[b].getStyle());
-            if (resultado) {
+            if (resultado)
+            {
                 lblComp.setText("Resultado: SIM");
                 lblComp.setStyle(COMP_LABEL_TRUE);
-            } else {
+            } else
+            {
                 lblComp.setText("Resultado: NAO");
                 lblComp.setStyle(COMP_LABEL_FALSE);
             }
         });
     }
 
-    private void mostrarComparacaoBotoes(Button a, Button b, String op, boolean resultado) {
-        // Mesma ideia da comparacao acima, mas recebendo botoes ja resolvidos.
-        Platform.runLater(() -> {
+    private void mostrarComparacaoBotoes(Button a, Button b, String op, boolean resultado)
+    {
+        Platform.runLater(() ->
+        {
             btnCompA.setText(a.getText());
             btnCompB.setText(b.getText());
             lblCompSinal.setText(op);
             btnCompA.setStyle(a.getStyle());
             btnCompB.setStyle(b.getStyle());
-            if (resultado) {
+            if (resultado)
+            {
                 lblComp.setText("Resultado: SIM");
                 lblComp.setStyle(COMP_LABEL_TRUE);
-            } else {
+            } else
+            {
                 lblComp.setText("Resultado: NAO");
                 lblComp.setStyle(COMP_LABEL_FALSE);
             }
         });
     }
 
-    private void limparComparacaoVisual() {
-        // Limpa o painel de comparacao para preparar o proximo passo.
-        Platform.runLater(() -> {
+    private void limparComparacaoVisual()
+    {
+        Platform.runLater(() ->
+        {
+            btnCompA.setText("-");
+            btnCompB.setText("-");
             btnCompA.setStyle(COMP_BTN_BASE);
             btnCompB.setStyle(COMP_BTN_BASE);
-            lblCompSinal.setText("?");
+            lblCompSinal.setText(">");
+            lblComp.setText("");
             lblComp.setStyle(COMP_LABEL_BASE);
         });
     }
 
-    private void mostrarBucketMinMax(int menor, int maior) {
-        // Atualiza o placar de faixa do bucket (menor e maior vistos ate agora).
-        Platform.runLater(() -> lblBucketMinMax.setText("Bucket -> Menor: " + menor + " | Maior: " + maior));
-    }
-
-    private void desenharBucketsVisuais(int quantidadeBuckets) {
-        // Cria um "icone de balde" por coluna, como gavetas de classificacao.
-        quantidadeBucketsAtual = Math.max(1, quantidadeBuckets);
-        Platform.runLater(() -> {
-            for (ImageView view : bucketImagens) {
+    private void desenharBucketsVisuais(int qntdBuckets)
+    {
+        quantidadeBucketsAtual = Math.max(1, qntdBuckets);
+        Platform.runLater(() ->
+        {
+            for (ImageView view : bucketImagens)
                 areaExecucao.getChildren().remove(view);
-            }
             bucketImagens.clear();
 
-            if (imagemBalde == null) {
-                return;
-            }
-
-            for (int b = 0; b < quantidadeBuckets; b++) {
+            for (int b = 0; b < qntdBuckets; b++)
+            {
                 ImageView view = new ImageView(imagemBalde);
                 view.setFitWidth(52);
                 view.setFitHeight(52);
@@ -550,172 +717,253 @@ public class Principal extends Application {
         });
     }
 
-    private double calcularPosicaoXBucket(int indiceBalde) {
-        // Distribui os baldes pela largura util para evitar espaco ocioso.
+    private double calcularPosicaoXBucket(int indiceBalde)
+    {
         double largura = areaExecucao.getPrefWidth();
         double margemEsquerda = 110;
         double margemDireita = largura - 140;
-        if (quantidadeBucketsAtual <= 1) {
+        if (quantidadeBucketsAtual <= 1)
             return (margemEsquerda + margemDireita) / 2.0;
-        }
         double passo = (margemDireita - margemEsquerda) / (quantidadeBucketsAtual - 1.0);
         return margemEsquerda + (indiceBalde * passo);
     }
 
-    private void setBucketImagensVisiveis(boolean visivel) {
-        // Baldes so aparecem quando o metodo atual e o Bucket.
-        Platform.runLater(() -> {
-            for (ImageView view : bucketImagens) {
+    private void setBucketImagensVisiveis(boolean visivel)
+    {
+        Platform.runLater(() ->
+        {
+            for (ImageView view : bucketImagens)
+            {
                 view.setVisible(visivel);
             }
         });
     }
 
-    private void configurarIndicadoresMetodo() {
-        // Ajusta os indicadores de topo para refletir o algoritmo atual.
-        if ("HEAP".equals(algoritmoSelecionado)) {
+    private void configurarIndicadoresMetodo()
+    {
+        if ("HEAP".equals(algoritmoSelecionado))
             atualizarIndicadoresHeap(-1, -1, -1, "-");
-        } else {
+        else
             atualizarIndicadoresBucket(-1, -1, calcularQuantidadeBuckets(), "-");
-        }
     }
 
-    private void atualizarIndicadoresHeap(int pai, int filho1, int filho2, String auxValor) {
-        // Atualiza os "indicadores de depuracao" de cima no modo Heap.
-        Platform.runLater(() -> {
+    private void atualizarIndicadoresHeap(int pai, int filho1, int filho2, String auxValor)
+    {
+        Platform.runLater(() ->
+        {
             btnStatus1.setText("pai: " + (pai >= 0 ? pai : "-"));
             btnStatus2.setText("filho1: " + (filho1 >= 0 ? filho1 : "-"));
             btnStatus3.setText("filho2: " + (filho2 >= 0 ? filho2 : "-"));
             btnStatus4.setText("aux: " + auxValor);
         });
     }
-
-    private void atualizarIndicadoresBucket(int i, int j, int qtdBaldes) {
-        // Sobrecarga para chamadas sem valor de aux explicito.
-        atualizarIndicadoresBucket(i, j, qtdBaldes, "-");
-    }
-
-    private void atualizarIndicadoresBucket(int i, int j, int qtdBaldes, String auxValor) {
-        // Atualiza os indicadores de cima no modo Bucket.
-        Platform.runLater(() -> {
-            btnStatus1.setText("i: " + (i >= 0 ? i : "-"));
-            btnStatus2.setText("j: " + (j >= 0 ? j : "-"));
-            btnStatus3.setText("qtd: " + qtdBaldes);
+    
+    private void atualizarIndicadoresHeap(int pai, int filho1, int filho2, String auxValor, int tl)
+    {
+        Platform.runLater(() ->
+        {
+            btnStatus1.setText("pai: " + (pai >= 0 ? pai : "-"));
+            btnStatus2.setText("filho1: " + (filho1 >= 0 ? filho1 : "-"));
+            btnStatus3.setText("filho2: " + (filho2 >= 0 ? filho2 : "-"));
             btnStatus4.setText("aux: " + auxValor);
+            btnStatusTL.setText("TL: " + tl);
         });
     }
 
-    private int filesize() {
-        // Nesta visualizacao, filesize equivale ao tamanho do vetor atual.
+    private void atualizarIndicadoresBucket(int i, int j, int qtdBaldes)
+    {
+        atualizarIndicadoresBucket(i, j, qtdBaldes, "-", -1, -1, -1, -1);
+    }
+
+    private void atualizarIndicadoresBucket(int i, int j, int qtdBaldes, String auxValor)
+    {
+        atualizarIndicadoresBucket(i, j, qtdBaldes, auxValor, -1, -1, -1, -1);
+    }
+    
+    private void atualizarIndicadoresBucket(int i, int j, int qtdBaldes, String auxValor, int menor, int maior)
+    {
+        atualizarIndicadoresBucket(i, j, qtdBaldes, auxValor, menor, maior, -1, -1);
+    }
+
+    private void atualizarIndicadoresBucket(int i, int j, int qtdBaldes, String auxValor, int menor, int maior, int p) {
+        atualizarIndicadoresBucket(i, j, qtdBaldes, auxValor, menor, maior, p, -1);
+    }
+
+    private void atualizarIndicadoresBucket(int i, int j, int qtdBaldes, String auxValor, int menor, int maior, int p, int pos)
+    {
+        Platform.runLater(() ->
+        {
+            if (menor >= 0)
+                ultimoMenorBucket = menor;
+
+
+            if (maior >= 0)
+                ultimoMaiorBucket = maior;
+
+            btnStatus1.setText("i: " + (i >= 0 ? i : "-"));
+            btnStatus2.setText("j: " + (j >= 0 ? j : "-"));
+            btnStatus3.setText("qntdBuckets: " + qtdBaldes);
+            btnStatus4.setText("aux: " + auxValor);
+            btnStatusMenor.setText("menor: " + (ultimoMenorBucket >= 0 ? ultimoMenorBucket : "-"));
+            btnStatusMaior.setText("maior: " + (ultimoMaiorBucket >= 0 ? ultimoMaiorBucket : "-"));
+            btnStatusP.setText("p: " + (p >= 0 ? p : "-"));
+            btnStatusPos.setText("pos: " + (pos >= 0 ? pos : "-"));
+        });
+    }
+
+    private int filesize()
+    {
         return vet.length;
     }
 
-    private int calcularQuantidadeBuckets() {
-        // Regra do trabalho: usar raiz do tamanho para estimar qtd de baldes.
-        int quantidadeBuckets = (int) Math.sqrt(filesize());
-        if (quantidadeBuckets == 0) {
-            quantidadeBuckets = 1;
-        }
-        return quantidadeBuckets;
+    private int calcularQuantidadeBuckets()
+    {
+        int qntdBuckets = (int) Math.sqrt(filesize());
+        if (qntdBuckets == 0)
+            qntdBuckets = 1;
+
+        return qntdBuckets;
     }
 
-    public void heap_sort() throws InterruptedException {
-        // Heap Sort aqui funciona em "ciclos":
-        // 1) monta (ou remonta) um heap maximo na parte ainda nao ordenada
-        // 2) coloca o maior elemento da vez no final do vetor
-        // 3) diminui o TL e repete ate sobrar 1 elemento
+    public void heap_sort() throws InterruptedException
+    {
+        destacarLinhaComPausa(1);
         int pai, f1, f2, Fmaior, tl = vet.length;
-        atualizarIndicadoresHeap(-1, -1, -1, "-");
+        destacarLinhaComPausa(2);
+        atualizarIndicadoresHeap(-1, -1, -1, "-", tl);
         destacarLinhaComPausa(3);
-        while (tl > 1) {
-            // enquanto tiver pelo menos 2 elementos "ativos", ainda da para ordenar.
+        while (tl > 1)
+        {
             destacarLinhaComPausa(4);
 
-            for (pai = tl / 2 - 1; pai >= 0; pai--) {
-                // percorre os pais de tras para frente para garantir propriedade de heap.
+            for (pai = tl / 2 - 1; pai >= 0; pai--)
+            {
                 destacarBotao(pai, BTN_PAI);
                 destacarLinhaComPausa(5);
                 f1 = 2 * pai + 1;
-                atualizarIndicadoresHeap(pai, f1, -1, "-");
-                if (f1 < tl) {
+                atualizarIndicadoresHeap(pai, f1, -1, "-", tl);
+                if (f1 < tl)
                     destacarBotao(f1, BTN_FILHO);
-                }
+
 
                 destacarLinhaComPausa(6);
                 f2 = f1 + 1;
-                atualizarIndicadoresHeap(pai, f1, f2 < tl ? f2 : -1, "-");
-                if (f2 < tl) {
+                atualizarIndicadoresHeap(pai, f1, f2 < tl ? f2 : -1, "-", tl);
+                if (f2 < tl)
                     destacarBotao(f2, BTN_FILHO);
-                }
+
 
                 destacarLinhaComPausa(7);
-                // por padrao assume o filho da esquerda como maior.
                 Fmaior = f1;
-
                 destacarLinhaComPausa(8);
-                // Comparacao visual entre os filhos para decidir qual e o maior.
-                if (f2 < tl) {
+
+                if (f2 < tl)
+                {
                     boolean r1 = Integer.parseInt(vet[f2].getText()) > Integer.parseInt(vet[f1].getText());
                     mostrarComparacao(f2, f1, ">", r1);
                     Thread.sleep(1700);
-                    limparComparacaoVisual();if (f2 < tl && Integer.parseInt(vet[f2].getText()) > Integer.parseInt(vet[f1].getText())) {
+                    limparComparacaoVisual();
+                    if(f2 < tl && Integer.parseInt(vet[f2].getText()) > Integer.parseInt(vet[f1].getText()))
+                    {
                         destacarLinhaComPausa(9);
                         Fmaior = f2;
                     }
                 }
-
-                // Depois de decidir quem e o maior filho, pinta ele para ficar didatico.
                 destacarBotao(Fmaior, BTN_MAIOR);
                 destacarLinhaComPausa(11);
 
-                // Compara pai vs maior filho para decidir se precisa trocar.
                 boolean r2 = Integer.parseInt(vet[pai].getText()) < Integer.parseInt(vet[Fmaior].getText());
                 mostrarComparacao(Fmaior,pai, ">", r2);
                 Thread.sleep(1700);
                 limparComparacaoVisual();
 
-                // Se pai for menor, faz a troca para manter a regra do heap maximo.
-                if (Integer.parseInt(vet[pai].getText()) < Integer.parseInt(vet[Fmaior].getText())) {
+                if (Integer.parseInt(vet[pai].getText()) < Integer.parseInt(vet[Fmaior].getText()))
+                {
                     destacarLinhaComPausa(12);
-                    atualizarIndicadoresHeap(pai, f1, f2 < tl ? f2 : -1, vet[pai].getText());
+                    atualizarIndicadoresHeap(pai, f1, f2 < tl ? f2 : -1, vet[pai].getText(), tl);
+
                     Thread t = move_botoes(pai, Fmaior);
+
+                    boolean mostrou13 = false;
+                    boolean mostrou14 = false;
+                    boolean mostrou15 = false;
+
+                    while (t.isAlive())
+                    {
+                        if (execucaoCancelada || Thread.currentThread().isInterrupted())
+                        {
+                            t.interrupt();
+                            throw new InterruptedException("Execucao cancelada");
+                        }
+
+                        if (!mostrou13)
+                        {
+                            destacarLinha(13); // int aux = vet[pai];
+                            mostrou13 = true;
+                            Thread.sleep(120);
+                        }
+                        else if (!mostrou14)
+                        {
+                            destacarLinha(14); // vet[pai] = vet[Fmaior];
+                            mostrou14 = true;
+                            Thread.sleep(120);
+                        }
+                        else if (!mostrou15)
+                        {
+                            destacarLinha(15); // vet[Fmaior] = aux;
+                            mostrou15 = true;
+                            Thread.sleep(120);
+                        }
+                        else
+                        {
+                            Thread.sleep(40);
+                        }
+                    }
+
+                    if (!mostrou15)
+                        destacarLinha(15);
+
                     t.join();
-                    atualizarIndicadoresHeap(pai, f1, f2 < tl ? f2 : -1, "-");
+                    atualizarIndicadoresHeap(pai, f1, f2 < tl ? f2 : -1, "-", tl);
                 }
                 pintarBase(tl);
             }
 
-            // Com heap pronto, a raiz (indice 0) guarda o maior da parte ativa.
-            // Entao troca raiz com ultima posicao valida (tl-1) e "congela" esse fim.
             destacarLinhaComPausa(17);
-            atualizarIndicadoresHeap(0, -1, -1, vet[0].getText());
+            atualizarIndicadoresHeap(0, -1, -1, vet[0].getText(), tl);
             Thread t = move_botoes(0, tl - 1);
             t.join();
-            atualizarIndicadoresHeap(0, -1, -1, "-");
+            atualizarIndicadoresHeap(0, -1, -1, "-", tl);
             int pos = tl - 1;
             Platform.runLater(() -> vet[pos].setStyle(BTN_ORDENADO));
             Thread.sleep(80);
             destacarLinhaComPausa(20);
             tl--;
+            final int tlAtual = tl;
+            Platform.runLater(() -> btnStatusTL.setText("TL: " + tlAtual));
         }
         Platform.runLater(() -> vet[0].setStyle(BTN_ORDENADO));
         Thread.sleep(80);
-        Platform.runLater(() -> lblComp.setText("Comparacao: fim"));
-        atualizarIndicadoresHeap(-1, -1, -1, "-");
+        atualizarIndicadoresHeap(-1, -1, -1, "-", tl);
         destacarLinha(-1);
     }
 
-    private int valorBotao(Button b) {
-        // Como o numero esta no texto do botao, converte para inteiro aqui.
+    private int valorBotao(Button b)
+    {
         return Integer.parseInt(b.getText());
     }
 
-    // Motor de animacao: move um botao em pequenos passos ate o alvo.
-    private Thread moverBotaoPara(Button botao, double alvoX, double alvoY) {
-        Task<Void> task = new Task<>() {
+    private Thread moverBotaoPara(Button botao, double alvoX, double alvoY)
+    {
+        Task<Void> task = new Task<>()
+        {
             @Override
-            protected Void call() {
-                while (Math.abs(alvoX - botao.getLayoutX()) > 1 || Math.abs(alvoY - botao.getLayoutY()) > 1) {
+            protected Void call()
+            {
+                boolean cancelar = execucaoCancelada || Thread.currentThread().isInterrupted();
+
+                while ((Math.abs(alvoX - botao.getLayoutX()) > 1 || Math.abs(alvoY - botao.getLayoutY()) > 1) && !cancelar)
+                {
                     double atualX = botao.getLayoutX();
                     double atualY = botao.getLayoutY();
 
@@ -728,267 +976,329 @@ public class Principal extends Application {
                     double novoX = atualX + passoX;
                     double novoY = atualY + passoY;
 
-                    Platform.runLater(() -> {
+                    Platform.runLater(() ->
+                    {
                         botao.setLayoutX(novoX);
                         botao.setLayoutY(novoY);
                     });
-                    try {
+
+                    try
+                    {
                         Thread.sleep(30);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
                     }
+                    catch (InterruptedException e)
+                    {
+                        Thread.currentThread().interrupt();
+                        cancelar = true;
+                    }
+
+                    cancelar = cancelar || execucaoCancelada || Thread.currentThread().isInterrupted();
                 }
-                Platform.runLater(() -> {
-                    botao.setLayoutX(alvoX);
-                    botao.setLayoutY(alvoY);
-                });
+
+                if (!cancelar)
+                {
+                    Platform.runLater(() ->
+                    {
+                        botao.setLayoutX(alvoX);
+                        botao.setLayoutY(alvoY);
+                    });
+                }
+
                 return null;
             }
         };
+
         Thread thread = new Thread(task);
         thread.start();
         return thread;
     }
 
-    private Thread animarParaBalde(Button botao, int balde, int pos) {
-        // Leva o elemento para dentro do balde escolhido.
+    private Thread animarParaBalde(Button botao, int balde, int pos)
+    {
         double x = calcularPosicaoXBucket(balde) - 20;
         double y = 320 + pos * 35;
         return moverBotaoPara(botao, x, y);
     }
 
-    private Thread animarDoBaldeParaLinha(Button botao, int indiceFinal) {
-        // Traz de volta para o vetor principal, na ordem final.
+    private Thread animarDoBaldeParaLinha(Button botao, int indiceFinal)
+    {
         double x = 110 + indiceFinal * 80; // volta pra linha principal
-        double y = 260;
+        double y = 200;
         return moverBotaoPara(botao, x, y);
     }
 
-    // Trilha lateral do auxiliar na insercao (facilita enxergar o "aux").
-    private Thread animarAuxiliarBalde(Button botao, int balde, int pos) {
+    private Thread animarAuxiliarBalde(Button botao, int balde, int pos)
+    {
         double x = calcularPosicaoXBucket(balde) - 70;
         double y = 320 + pos * 35;
         return moverBotaoPara(botao, x, y);
     }
 
-    private void pintarComparacaoBucket(Button a, Button b) {
-        // Destaca em vermelho os dois que estao sendo comparados no balde.
+    private void pintarComparacaoBucket(Button a, Button b)
+    {
         Platform.runLater(() -> {
             a.setStyle(BTN_INSERCAO);
             b.setStyle(BTN_INSERCAO);
         });
     }
 
-    private void limparComparacaoBucket(Button a, Button b) {
-        // Volta os botoes comparados para o estilo padrao.
-        Platform.runLater(() -> {
+    private void limparComparacaoBucket(Button a, Button b)
+    {
+        Platform.runLater(() ->
+        {
             a.setStyle(BTN_NORMAL);
             b.setStyle(BTN_NORMAL);
         });
     }
 
-    public void bucket_sort() throws InterruptedException {
-        // Bucket em alto nivel:
-        // 1) encontra menor/maior
-        // 2) distribui por faixa
-        // 3) ordena cada balde por insercao
-        // 4) concatena tudo de volta.
+    public void bucket_sort() throws InterruptedException
+    {
         destacarLinhaComPausa(1);
-        // Quantidade de baldes escolhida por raiz do tamanho.
-        int quantidadeBuckets = (int) Math.sqrt(filesize());
-        if (quantidadeBuckets == 0)
-            quantidadeBuckets = 1;
-        desenharBucketsVisuais(quantidadeBuckets);
-        atualizarIndicadoresBucket(-1, -1, quantidadeBuckets);
+        destacarLinhaComPausa(2);
+        int qntdBuckets = (int) Math.sqrt(filesize());
+        destacarLinhaComPausa(3);
+        if (qntdBuckets == 0)
+        {
+            destacarLinhaComPausa(4);
+            qntdBuckets = 1;
+        }
+        desenharBucketsVisuais(qntdBuckets);
+        atualizarIndicadoresBucket(-1, -1, qntdBuckets);
         int n = vet.length;
+        destacarLinhaComPausa(5);
         int menor, maior, intervalo, pos, k;
 
-        destacarLinhaComPausa(4);
-        Button[][] baldes = new Button[quantidadeBuckets][n];
-        destacarLinhaComPausa(5);
-        // tlBaldes guarda "quantos elementos ja entraram" em cada balde.
-        int[] tlBaldes = new int[quantidadeBuckets];
-
-        // Etapa de mapeamento da faixa de valores.
         destacarLinhaComPausa(6);
-        menor = maior = valorBotao(vet[0]);
-        mostrarBucketMinMax(menor, maior);
-        Thread.sleep(700);
+        Button[][] baldes = new Button[qntdBuckets][n];
         destacarLinhaComPausa(7);
-        for (int i = 0; i < n; i++) {
-            atualizarIndicadoresBucket(i, -1, quantidadeBuckets);
+        int[] tlBaldes = new int[qntdBuckets];
+
+        destacarLinhaComPausa(8);
+        menor = maior = valorBotao(vet[0]);
+        atualizarIndicadoresBucket(-1, -1, qntdBuckets, "-", menor, maior);
+        Thread.sleep(700);
+        destacarLinhaComPausa(9);
+        for (int i = 0; i < n; i++)
+        {
+            atualizarIndicadoresBucket(i, -1, qntdBuckets, "-", menor, maior);
             int valor = valorBotao(vet[i]);
             vet[i].setStyle(BTN_PAI);
-            destacarLinhaComPausa(8);
+            destacarLinhaComPausa(10);
             if (valor < menor)
+            {
+                destacarLinhaComPausa(11);
                 menor = valor;
-            destacarLinhaComPausa(9);
+            }
+            destacarLinhaComPausa(12);
             if (valor > maior)
+            {
+                destacarLinhaComPausa(13);
                 maior = valor;
-            mostrarBucketMinMax(menor, maior);
+            }
+            atualizarIndicadoresBucket(i, -1, qntdBuckets, "-", menor, maior);
             Thread.sleep(450);
             vet[i].setStyle(BTN_NORMAL);
         }
 
-        // Intervalo define o tamanho de cada faixa numerica.
-        // Exemplo: se intervalo = 10, valores [0..9] caem num balde, [10..19] em outro...
-        destacarLinhaComPausa(11);
-        intervalo = (maior - menor + 1) / quantidadeBuckets;
+        destacarLinhaComPausa(15);
+        intervalo = (maior - menor + 1) / qntdBuckets;
         if (intervalo == 0)
             intervalo = 1;
 
-        // Distribuicao: transforma o valor em indice de balde e anima a "queda".
-        destacarLinhaComPausa(13);
-        for (int i = 0; i < n; i++) {
-            atualizarIndicadoresBucket(i, -1, quantidadeBuckets);
+        destacarLinhaComPausa(18);
+        for (int i = 0; i < n; i++)
+        {
+            atualizarIndicadoresBucket(i, -1, qntdBuckets);
             int valor = valorBotao(vet[i]);
-            destacarLinhaComPausa(14);
+            destacarLinhaComPausa(22);
             pos = (valor - menor) / intervalo;
-            destacarLinhaComPausa(18);
-            // Protecao para nao estourar o ultimo balde por arredondamento.
-            if (pos >= quantidadeBuckets)
-                pos = quantidadeBuckets - 1;
+            atualizarIndicadoresBucket(i, -1, qntdBuckets, "-", menor, maior, -1, pos);
+            destacarLinhaComPausa(23);
+            if (pos >= qntdBuckets)
+            {
+                destacarLinhaComPausa(24);
+                pos = qntdBuckets - 1;
+                atualizarIndicadoresBucket(i, -1, qntdBuckets, "-", menor, maior, -1, pos);
+            }
 
             Thread t = animarParaBalde(vet[i], pos, tlBaldes[pos]);
             t.join();
 
+            destacarLinhaComPausa(25);
+            atualizarIndicadoresBucket(i, -1, qntdBuckets, "-", menor, maior, -1, pos);
             baldes[pos][tlBaldes[pos]] = vet[i];
             tlBaldes[pos]++;
         }
 
-        // Cada balde e pequeno, entao insercao direta funciona muito bem aqui.
-        // A ideia e "arrumar a gaveta por dentro" antes de juntar tudo.
-        destacarLinhaComPausa(22);
-        Platform.runLater(() -> {
+        destacarLinhaComPausa(28);
+        Platform.runLater(() ->
+        {
             btnCompA.setVisible(true);
             btnCompB.setVisible(true);
             lblCompSinal.setVisible(true);
             lblComp.setVisible(true);
         });
-        for (int b = 0; b < quantidadeBuckets; b++) {
-            destacarLinhaComPausa(23);
-            for (int i = 1; i < tlBaldes[b]; i++) {
-                destacarLinhaComPausa(24);
-                Button aux = baldes[b][i];
-                atualizarIndicadoresBucket(i, -1, quantidadeBuckets, aux.getText());
-                int posAuxVisual = i;
+        for (int b = 0; b < qntdBuckets; b++)
+        {
+            destacarLinhaComPausa(28);
+            for (int j = 1; j < tlBaldes[b]; j++)
+            {
+                destacarLinhaComPausa(29);
+                Button aux = baldes[b][j];
+                destacarLinhaComPausa(30);
+                atualizarIndicadoresBucket(b, j, qntdBuckets, aux.getText(), -1, -1, j);
+                int posAuxVisual = j;
                 Thread tAuxLado = animarAuxiliarBalde(aux, b, posAuxVisual);
                 tAuxLado.join();
-                destacarLinhaComPausa(25);
-                int j = i - 1;
-                atualizarIndicadoresBucket(i, j, quantidadeBuckets, aux.getText());
-                destacarLinhaComPausa(26);
+                destacarLinhaComPausa(31);
+                int p = j;
+                atualizarIndicadoresBucket(b, j, qntdBuckets, aux.getText(), -1, -1, p);
+                destacarLinhaComPausa(32);
                 boolean continuaComparando = true;
-                while (j >= 0 && continuaComparando) {
-                    // Enquanto aux for menor que o da esquerda, empurra o da esquerda para frente.
-                    atualizarIndicadoresBucket(i, j, quantidadeBuckets, aux.getText());
-                    Button comparado = baldes[b][j];
+                while (p > 0 && continuaComparando)
+                {
+                    atualizarIndicadoresBucket(b, j, qntdBuckets, aux.getText(), -1, -1, p);
+                    Button comparado = baldes[b][p - 1];
                     pintarComparacaoBucket(comparado, aux);
                     Thread.sleep(700);
 
                     boolean precisaTrocar = valorBotao(comparado) > valorBotao(aux);
                     mostrarComparacaoBotoes(comparado, aux, ">", precisaTrocar);
                     Thread.sleep(750);
-                    destacarLinhaComPausa(27);
-                    if (precisaTrocar) {
-                        // "abre espaco": desloca comparado uma posicao a direita.
-                        baldes[b][j + 1] = comparado;
-                        destacarLinhaComPausa(28);
-                        Thread tShift = animarParaBalde(comparado, b, j + 1);
+                    destacarLinhaComPausa(33);
+                    if (precisaTrocar)
+                    {
+                        baldes[b][p] = comparado;
+                        destacarLinhaComPausa(34);
+                        Thread tShift = animarParaBalde(comparado, b, p);
                         tShift.join();
-                        j--;
-                        atualizarIndicadoresBucket(i, j, quantidadeBuckets, aux.getText());
+                        p--;
+                        atualizarIndicadoresBucket(b, j, qntdBuckets, aux.getText(), -1, -1, p);
                         posAuxVisual--;
                         Thread tAuxSobe = animarAuxiliarBalde(aux, b, posAuxVisual);
                         tAuxSobe.join();
                         Thread.sleep(600);
-                    } else {
+                    }
+                    else
+                    {
                         continuaComparando = false;
                     }
                     limparComparacaoBucket(comparado, aux);
                     limparComparacaoVisual();
                 }
-                destacarLinhaComPausa(30);
-                // Quando parar, j+1 e exatamente a casa correta do aux.
-                baldes[b][j + 1] = aux;
-                atualizarIndicadoresBucket(i, j + 1, quantidadeBuckets, aux.getText());
-                Thread tAux = animarParaBalde(aux, b, j + 1);
+                destacarLinhaComPausa(36);
+                baldes[b][p] = aux;
+                atualizarIndicadoresBucket(b, j, qntdBuckets, aux.getText(), -1, -1, p);
+                Thread tAux = animarParaBalde(aux, b, p);
                 tAux.join();
                 Thread.sleep(800);
             }
         }
         atualizarVisibilidadeMetodo();
 
-        // Junta os baldes na sequencia para montar o vetor ordenado final.
-        destacarLinhaComPausa(33);
         Button[] novoVet = new Button[n];
-        destacarLinhaComPausa(34);
+        destacarLinhaComPausa(39);
         k = 0;
-        destacarLinhaComPausa(35);
-        for (int b = 0; b < quantidadeBuckets; b++) {
-            // Concatena na ordem dos baldes: do menor intervalo para o maior.
-            destacarLinhaComPausa(36);
-            for (int j = 0; j < tlBaldes[b]; j++) {
-                atualizarIndicadoresBucket(-1, j, quantidadeBuckets);
+        destacarLinhaComPausa(40);
+        for (int b = 0; b < qntdBuckets; b++)
+        {
+            destacarLinhaComPausa(40);
+            for (int j = 0; j < tlBaldes[b]; j++)
+            {
+                destacarLinhaComPausa(41);
+                atualizarIndicadoresBucket(b, j, qntdBuckets);
                 Button atual = baldes[b][j];
                 Thread t = animarDoBaldeParaLinha(atual, k);
                 t.join();
                 Platform.runLater(() -> atual.setStyle(BTN_ORDENADO));
                 Thread.sleep(320);
+                destacarLinhaComPausa(42);
                 novoVet[k] = atual;
                 k++;
             }
         }
         vet = novoVet;
-        atualizarIndicadoresBucket(-1, -1, quantidadeBuckets);
+        atualizarIndicadoresBucket(-1, -1, qntdBuckets, "-", menor, maior, -1);
         destacarLinha(-1);
     }
 
-    public Thread move_botoes(int botao0, int botao1) {
-        // Animacao de troca no Heap: separa, cruza e recoloca.
-        Task<Void> task = new Task<>() {
+    public Thread move_botoes(int botao0, int botao1)
+    {
+        Task<Void> task = new Task<>()
+        {
             @Override
-            protected Void call() {
-                // 1) afasta verticalmente para visualizar que vai ter troca.
-                for (int i = 0; i < 10; i++) {
+            protected Void call()
+            {
+                boolean cancelar = execucaoCancelada || Thread.currentThread().isInterrupted();
+
+                for (int i = 0; i < 10 && !cancelar; i++)
+                {
                     Platform.runLater(() -> vet[botao0].setLayoutY(vet[botao0].getLayoutY() + 5));
                     Platform.runLater(() -> vet[botao1].setLayoutY(vet[botao1].getLayoutY() - 5));
-                    try {
+
+                    try
+                    {
                         Thread.sleep(50);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
                     }
+                    catch (InterruptedException e)
+                    {
+                        Thread.currentThread().interrupt();
+                        cancelar = true;
+                    }
+
+                    cancelar = cancelar || execucaoCancelada || Thread.currentThread().isInterrupted();
                 }
+
                 double distancia = Math.abs(vet[botao1].getLayoutX() - vet[botao0].getLayoutX());
                 int passos = (int) (distancia / 5);
 
-                // 2) atravessa na horizontal.
-                for (int i = 0; i < passos; i++) {
+                for (int i = 0; i < passos && !cancelar; i++)
+                {
                     Platform.runLater(() -> vet[botao0].setLayoutX(vet[botao0].getLayoutX() + 5));
                     Platform.runLater(() -> vet[botao1].setLayoutX(vet[botao1].getLayoutX() - 5));
-                    try {
+
+                    try
+                    {
                         Thread.sleep(25);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
                     }
+                    catch (InterruptedException e)
+                    {
+                        Thread.currentThread().interrupt();
+                        cancelar = true;
+                    }
+
+                    cancelar = cancelar || execucaoCancelada || Thread.currentThread().isInterrupted();
                 }
-                // 3) volta para a linha do vetor.
-                for (int i = 0; i < 10; i++) {
+
+                for (int i = 0; i < 10 && !cancelar; i++)
+                {
                     Platform.runLater(() -> vet[botao0].setLayoutY(vet[botao0].getLayoutY() - 5));
                     Platform.runLater(() -> vet[botao1].setLayoutY(vet[botao1].getLayoutY() + 5));
-                    try {
+
+                    try
+                    {
                         Thread.sleep(50);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
                     }
+                    catch (InterruptedException e)
+                    {
+                        Thread.currentThread().interrupt();
+                        cancelar = true;
+                    }
+
+                    cancelar = cancelar || execucaoCancelada || Thread.currentThread().isInterrupted();
                 }
-                // Troca de fato no array de botoes (estado logico).
-                Button aux = vet[botao0];
-                vet[botao0] = vet[botao1];
-                vet[botao1] = aux;
+
+                if (!cancelar)
+                {
+                    Button aux = vet[botao0];
+                    vet[botao0] = vet[botao1];
+                    vet[botao1] = aux;
+                }
+
                 return null;
             }
         };
+
         Thread thread = new Thread(task);
         thread.start();
         return thread;
